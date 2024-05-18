@@ -28,6 +28,6 @@ kotlin {
 }
 
 tasks.withType<Wrapper> {
-    gradleVersion = "8.4.0"
+    gradleVersion = "8.7"
     distributionType = Wrapper.DistributionType.BIN
 }
