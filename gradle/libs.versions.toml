@@ -1,0 +1,7 @@
+[versions]
+kotlin = "2.0.0-RC3"
+
+[plugins]
+jetbrains-kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+
+[bundles]

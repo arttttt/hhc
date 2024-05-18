@@ -1,5 +1,5 @@
 plugins {
-    kotlin("multiplatform") version "2.0.0-RC3"
+    alias(libs.plugins.jetbrains.kotlin.multiplatform)
 }
 
 group = "me.user"
