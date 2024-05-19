@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.jetbrains.kotlin.multiplatform)
+    alias(libs.plugins.kotlin.multiplatform)
 }
 
 group = "me.user"
@@ -21,6 +21,10 @@ kotlin {
     sourceSets {
         val desktopMain by creating {
             dependsOn(commonMain.get())
+
+            dependencies {
+                implementation(libs.kotlin.coroutines.core)
+            }
         }
 
         nativeMain.get().dependsOn(desktopMain)
