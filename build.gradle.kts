@@ -16,6 +16,14 @@ kotlin {
                 entryPoint = "main"
             }
         }
+
+        compilations.getByName("main") {
+            cinterops {
+                val uhid by creating {
+                    defFile("src/nativeInterop/cinterop/uhid.def")
+                }
+            }
+        }
     }
 
     sourceSets {
@@ -28,6 +36,10 @@ kotlin {
         }
 
         nativeMain.get().dependsOn(desktopMain)
+    }
+
+    compilerOptions {
+        optIn.add("kotlinx.cinterop.ExperimentalForeignApi")
     }
 }
 
