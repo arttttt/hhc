@@ -28,7 +28,6 @@ class Dualsense : VirtualController {
         private const val DS_OUTPUT_REPORT_BT = 0x31
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class, DelicateCoroutinesApi::class)
     private val scope = CoroutineScope(newSingleThreadContext("DualSenseDispatcher") + SupervisorJob())
 
     private val uhidDevice = UHidDevice(

@@ -40,6 +40,8 @@ kotlin {
 
     compilerOptions {
         optIn.add("kotlinx.cinterop.ExperimentalForeignApi")
+        optIn.add("kotlinx.coroutines.ExperimentalCoroutinesApi")
+        optIn.add("kotlinx.coroutines.DelicateCoroutinesApi")
     }
 }
 
