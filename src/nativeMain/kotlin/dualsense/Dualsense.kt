@@ -1,6 +1,7 @@
 package dualsense
 
 import VirtualController
+import dualsense.constants.*
 import kotlinx.cinterop.*
 import kotlinx.coroutines.*
 import platform.posix.*
@@ -35,7 +36,7 @@ class Dualsense : VirtualController {
         version = VERSION,
         country = COUNTRY,
         bus = BUS_USB.toUShort(),
-        reportDescriptor = DS5_EDGE_DESCRIPTOR.toUByteArray(),
+        reportDescriptor = DS5_EDGE_DESCRIPTOR,
     )
 
     override fun create() {
@@ -74,7 +75,7 @@ class Dualsense : VirtualController {
         }
     }
 
-    private fun formatMacAddress(macAddr: ByteArray): String {
+    private fun formatMacAddress(macAddr: UByteArray): String {
         require(macAddr.size == 6) { "MAC address must be 6 bytes long" }
         return macAddr
             .reversed()
@@ -108,28 +109,7 @@ class Dualsense : VirtualController {
                     size = DS_FEATURE_REPORT_PAIRING_INFO_SIZE,
                     id = event.id,
                     err = 0u,
-                    data = ubyteArrayOf(
-                        DS_FEATURE_REPORT_PAIRING_INFO,
-                        DS5_EDGE_MAC_ADDR[0].toUByte(),
-                        DS5_EDGE_MAC_ADDR[1].toUByte(),
-                        DS5_EDGE_MAC_ADDR[2].toUByte(),
-                        DS5_EDGE_MAC_ADDR[3].toUByte(),
-                        DS5_EDGE_MAC_ADDR[4].toUByte(),
-                        DS5_EDGE_MAC_ADDR[5].toUByte(),
-                        0x08u,
-                        0x25u,
-                        0x00u,
-                        0x1eu,
-                        0x00u,
-                        0xeeu,
-                        0x74u,
-                        0xd0u,
-                        0xbcu,
-                        0x00u,
-                        0x00u,
-                        0x00u,
-                        0x00u,
-                    ),
+                    data = DS_FEATURE_REPORT_PAIRING_DATA,
                 )
 
                 uhidDevice.write(response)
@@ -140,72 +120,7 @@ class Dualsense : VirtualController {
                     size = DS_FEATURE_REPORT_FIRMWARE_INFO_SIZE,
                     id = event.id,
                     err = 0u,
-                    data = ubyteArrayOf(
-                        DS_FEATURE_REPORT_FIRMWARE_INFO,
-                        0x4a.toUByte(),
-                        0x75.toUByte(),
-                        0x6e.toUByte(),
-                        0x20.toUByte(),
-                        0x31.toUByte(),
-                        0x39.toUByte(),
-                        0x20.toUByte(),
-                        0x32.toUByte(),
-                        0x30.toUByte(),
-                        0x32.toUByte(),
-                        0x33.toUByte(),
-                        0x31.toUByte(),
-                        0x34.toUByte(),
-                        0x3a.toUByte(),
-                        0x34.toUByte(),
-                        0x37.toUByte(),
-                        0x3a.toUByte(),
-                        0x33.toUByte(),
-                        0x34.toUByte(),
-                        0x03.toUByte(),
-                        0x00.toUByte(),
-                        0x44.toUByte(),
-                        0x00.toUByte(),
-                        0x08.toUByte(),
-                        0x02.toUByte(),
-                        0x00.toUByte(),
-                        0x01.toUByte(),
-                        0x36.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x01.toUByte(),
-                        0xc1.toUByte(),
-                        0xc8.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x54.toUByte(),
-                        0x01.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x14.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x0b.toUByte(),
-                        0x00.toUByte(),
-                        0x01.toUByte(),
-                        0x00.toUByte(),
-                        0x06.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                    ),
+                    data = DS_FEATURE_REPORT_FIRMWARE_DATA,
                 )
 
                 uhidDevice.write(response)
@@ -216,49 +131,7 @@ class Dualsense : VirtualController {
                     size = DS_FEATURE_REPORT_CALIBRATION_SIZE,
                     id = event.id,
                     err = 0u,
-                    data = ubyteArrayOf(
-                        DS_FEATURE_REPORT_CALIBRATION,
-                        0xfe.toUByte(),
-                        0xff.toUByte(),
-                        0xfc.toUByte(),
-                        0xff.toUByte(),
-                        0xfe.toUByte(),
-                        0xff.toUByte(),
-                        0x83.toUByte(),
-                        0x22.toUByte(),
-                        0x78.toUByte(),
-                        0xdd.toUByte(),
-                        0x92.toUByte(),
-                        0x22.toUByte(),
-                        0x5f.toUByte(),
-                        0xdd.toUByte(),
-                        0x95.toUByte(),
-                        0x22.toUByte(),
-                        0x6d.toUByte(),
-                        0xdd.toUByte(),
-                        0x1c.toUByte(),
-                        0x02.toUByte(),
-                        0x1c.toUByte(),
-                        0x02.toUByte(),
-                        0xf2.toUByte(),
-                        0x1f.toUByte(),
-                        0xed.toUByte(),
-                        0xdf.toUByte(),
-                        0xe3.toUByte(),
-                        0x20.toUByte(),
-                        0xda.toUByte(),
-                        0xe0.toUByte(),
-                        0xee.toUByte(),
-                        0x1f.toUByte(),
-                        0xdf.toUByte(),
-                        0xdf.toUByte(),
-                        0x0b.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                        0x00.toUByte(),
-                    ),
+                    data = DS_FEATURE_REPORT_CALIBRATION_DATA,
                 )
 
                 uhidDevice.write(response)
