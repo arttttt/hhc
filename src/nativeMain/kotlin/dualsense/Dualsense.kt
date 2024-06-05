@@ -16,14 +16,6 @@ class Dualsense : VirtualController {
         private const val VENDOR: UInt = 0x054Cu
         private const val VERSION: UInt = 256u
         private const val COUNTRY: UInt = 0u
-
-        private const val DS_INPUT_REPORT_USB = 0x01
-        private const val DS_INPUT_REPORT_USB_SIZE = 64
-        private const val DS_INPUT_REPORT_BT = 0x31
-        private const val DS_INPUT_REPORT_BT_SIZE = 78
-        private const val DS_OUTPUT_REPORT_USB = 0x02
-        private const val DS_OUTPUT_REPORT_USB_SIZE = 63
-        private const val DS_OUTPUT_REPORT_BT = 0x31
     }
 
     private val scope = CoroutineScope(newSingleThreadContext("DualSenseDispatcher") + SupervisorJob())
