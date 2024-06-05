@@ -1,12 +1,7 @@
 package uhid
 
-import dualsense.DS_FEATURE_REPORT_FIRMWARE_INFO
-import dualsense.DS_FEATURE_REPORT_FIRMWARE_INFO_SIZE
-import kotlinx.cinterop.MemScope
-import kotlinx.cinterop.alloc
-import kotlinx.cinterop.cstr
-import kotlinx.cinterop.refTo
-import platform.posix.err
+import dualsense.constants.DS_OUTPUT_REPORT_USB
+import kotlinx.cinterop.*
 import platform.posix.memcpy
 
 sealed interface UHidEvent {
@@ -43,7 +38,13 @@ sealed interface UHidEvent {
 
     data object Destroy : UHidEvent
 
-    data object Output : UHidEvent
+    data class Output(
+        val data: UByteArray,
+    ) : UHidEvent
+
+    data class Input(
+        val size: UShort,
+    ) : UHidEvent
 }
 
 fun UHidEvent.Companion.fromPlatformEvent(event: uhid_event): UHidEvent {
@@ -56,7 +57,11 @@ fun UHidEvent.Companion.fromPlatformEvent(event: uhid_event): UHidEvent {
             kind = event.u.get_report.rnum,
             id = event.u.get_report.id,
         )
-        uhid_event_type.UHID_OUTPUT.value -> UHidEvent.Output
+        uhid_event_type.UHID_OUTPUT.value -> {
+            UHidEvent.Output(
+                data = event.u.output.data.readBytes(event.u.output.size.toInt()).toUByteArray()
+            )
+        }
         else -> throw IllegalStateException("unsupported event: ${event.type}")
     }
 }
@@ -101,6 +106,11 @@ fun UHidEvent.toPlatformEvent(memScope: MemScope): uhid_event {
 
                     memcpy(data, this@toPlatformEvent.data.refTo(0), this@toPlatformEvent.data.size.toULong())
                 }
+            }
+
+            is UHidEvent.Input -> alloc<uhid_event>().apply {
+                type = uhid_event_type.UHID_INPUT2.value
+                u.input2.size = this@toPlatformEvent.size
             }
 
             else -> throw IllegalStateException("unsupported event: ${this@toPlatformEvent::class.simpleName}")
