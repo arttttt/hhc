@@ -43,7 +43,7 @@ sealed interface UHidEvent {
     ) : UHidEvent
 
     data class Input(
-        val size: UShort,
+        val data: UByteArray,
     ) : UHidEvent
 }
 
@@ -110,7 +110,8 @@ fun UHidEvent.toPlatformEvent(memScope: MemScope): uhid_event {
 
             is UHidEvent.Input -> alloc<uhid_event>().apply {
                 type = uhid_event_type.UHID_INPUT2.value
-                u.input2.size = this@toPlatformEvent.size
+                u.input2.size = data.size.toUShort()
+                memcpy(u.input2.data, data.refTo(0), data.size.toULong())
             }
 
             else -> throw IllegalStateException("unsupported event: ${this@toPlatformEvent::class.simpleName}")
