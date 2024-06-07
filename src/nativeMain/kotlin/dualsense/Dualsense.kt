@@ -2,10 +2,16 @@ package dualsense
 
 import VirtualController
 import dualsense.constants.*
-import kotlinx.cinterop.*
+import kotlinx.cinterop.alloc
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.ptr
 import kotlinx.coroutines.*
-import platform.posix.*
-import uhid.*
+import platform.posix.POLLIN
+import platform.posix.poll
+import platform.posix.pollfd
+import uhid.BUS_USB
+import uhid.UHidDevice
+import uhid.UHidEvent
 
 class Dualsense : VirtualController {
 
