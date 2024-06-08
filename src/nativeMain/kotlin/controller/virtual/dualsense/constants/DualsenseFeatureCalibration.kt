@@ -1,4 +1,4 @@
-package dualsense.constants
+package controller.virtual.dualsense.constants
 
 val DS_FEATURE_REPORT_CALIBRATION: UByte = 0x05u
 val DS_FEATURE_REPORT_CALIBRATION_SIZE: UShort = 41u

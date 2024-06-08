@@ -1,6 +1,5 @@
 package uhid
 
-import dualsense.constants.DS_OUTPUT_REPORT_USB
 import kotlinx.cinterop.*
 import platform.posix.memcpy
 

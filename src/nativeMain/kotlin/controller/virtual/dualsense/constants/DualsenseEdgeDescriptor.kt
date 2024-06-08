@@ -1,4 +1,4 @@
-package dualsense.constants
+package controller.virtual.dualsense.constants
 
 val DS5_EDGE_DESCRIPTOR = ubyteArrayOf(
     0x05u, 0x01u, // Usage Page (Generic Desktop Controls)

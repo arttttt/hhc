@@ -1,4 +1,4 @@
-package dualsense.constants
+package controller.virtual.dualsense.constants
 
 val DS_FEATURE_REPORT_PAIRING_INFO: UByte = 0x09u
 val DS_FEATURE_REPORT_PAIRING_INFO_SIZE: UShort = 20u

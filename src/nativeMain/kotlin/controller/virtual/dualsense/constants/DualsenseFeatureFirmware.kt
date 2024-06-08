@@ -1,4 +1,4 @@
-package dualsense.constants
+package controller.virtual.dualsense.constants
 
 val DS_FEATURE_REPORT_FIRMWARE_INFO: UByte = 0x20u
 val DS_FEATURE_REPORT_FIRMWARE_INFO_SIZE: UShort = 64u

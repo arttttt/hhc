@@ -1,10 +1,6 @@
-import dualsense.Dualsense
-import kotlinx.cinterop.*
-import platform.posix.*
-import uhid.uhid_event
-import uhid.uhid_event_type
+import controller.virtual.dualsense.Dualsense
+import platform.posix.sleep
 
-@OptIn(ExperimentalForeignApi::class)
 fun main() {
     val dualsense = Dualsense()
 

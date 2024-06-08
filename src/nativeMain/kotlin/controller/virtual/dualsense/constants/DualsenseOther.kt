@@ -1,4 +1,4 @@
-package dualsense.constants
+package controller.virtual.dualsense.constants
 
 import kotlin.math.roundToInt
 
