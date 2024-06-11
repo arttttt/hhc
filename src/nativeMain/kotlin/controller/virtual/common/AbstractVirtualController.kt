@@ -28,7 +28,7 @@ abstract class AbstractVirtualController(
         reportDescriptor = deviceInfo.reportDescriptor,
     )
 
-    protected val scope = CoroutineScope(newSingleThreadContext("DualSenseDispatcher") + SupervisorJob())
+    protected val scope = CoroutineScope(newSingleThreadContext("VirtualControllerDispatcher") + SupervisorJob())
 
     protected abstract fun handleUhidEvent(event: UHidEvent)
 
