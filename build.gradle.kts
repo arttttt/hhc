@@ -23,6 +23,12 @@ kotlin {
                     defFile("src/nativeInterop/cinterop/uhid.def")
                 }
             }
+
+            cinterops {
+                val input by creating {
+                    defFile("src/nativeInterop/cinterop/input.def")
+                }
+            }
         }
     }
 
