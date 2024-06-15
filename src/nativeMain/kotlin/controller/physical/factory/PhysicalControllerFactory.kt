@@ -3,18 +3,13 @@ package controller.physical.factory
 import controller.physical.InputDeviceHwInfo
 import controller.physical.common.PhysicalController
 
-class PhysicalControllerFactory {
+class PhysicalControllerFactory(
+    private val factories: Map<Pair<Int, Int>, ControllerFactory>
+) {
 
     fun create(
         hwInfo: InputDeviceHwInfo,
     ): PhysicalController? {
-        return when {
-            hwInfo.vendorId == 0x045e && hwInfo.productId == 0x0b12 -> {
-                println("xbox controller found")
-
-                null
-            }
-            else -> null
-        }
+        return factories[hwInfo.vendorId to hwInfo.productId]?.create(hwInfo.path)
     }
 }
