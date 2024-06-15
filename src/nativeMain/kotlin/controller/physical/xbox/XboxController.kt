@@ -1,5 +1,6 @@
 package controller.physical.xbox
 
+import controller.AbsInfo
 import controller.physical.common.AbstractController
 import controller.physical.common.ControllerType
 import controller.physical.common.PhysicalController
@@ -32,13 +33,38 @@ class XboxController(
         }
     }
 
-    override fun handleUhidEvent(event: input_event) {
-        val type = event.type.toInt()
+    private val axisInfo: Map<Axis, AbsInfo> = buildMap {
+        val dpadAbsInfo = AbsInfo(
+            minimum = -1,
+            maximum = 1,
+        )
 
-        val mappedEvent = when {
-            type == EV_KEY -> handleKeys(event)
-            type == EV_ABS && isDpadCode(event.code.toInt()) -> handleDpad(event)
-            type == EV_ABS -> handleAxis(event)
+        put(Axis.HAT0X, dpadAbsInfo)
+        put(Axis.HAT0Y, dpadAbsInfo)
+
+        val triggersAbsInfo = AbsInfo(
+            minimum = 0,
+            maximum = 1023,
+        )
+
+        put(Axis.LT, triggersAbsInfo)
+        put(Axis.RT, triggersAbsInfo)
+
+        val joystickAbsInfo = AbsInfo(
+            minimum = -32768,
+            maximum = 32767,
+        )
+
+        put(Axis.LX, joystickAbsInfo)
+        put(Axis.LY, joystickAbsInfo)
+        put(Axis.RX, joystickAbsInfo)
+        put(Axis.RY, joystickAbsInfo)
+    }
+
+    override fun handleUhidEvent(event: input_event) {
+        val mappedEvent = when (event.type.toInt()) {
+            EV_KEY -> handleKeys(event)
+            EV_ABS -> handleAxis(event)
             else -> null
         }
 
@@ -61,37 +87,8 @@ class XboxController(
         return InputEventPool.obtainAxisEvent(
             timestamp = 0,
             axis = axis,
-            value = event.value.toDouble(),
+            value = axisInfo.getValue(axis).normalize(event.value),
         )
-    }
-
-    /**
-     * todo: implement dpad
-     */
-    private fun handleDpad(event: input_event): InputEvent? {
-        return null
-/*        println(event.code.toHexString())
-        println(event.value)
-
-        val button = event.toDpadButton() ?: return null
-
-        return InputEventPool.obtainButtonEvent(
-            timestamp = 0,
-            button = button,
-            pressed = event.value != 0,
-        )*/
-    }
-
-    private fun input_event.toDpadButton(): Button? {
-        return when (code.toInt()) {
-            ABS_HAT0X -> {
-                null
-            }
-            ABS_HAT0Y -> {
-                null
-            }
-            else -> null
-        }
     }
 
     private fun codeToAxis(code: Int): Axis? {
@@ -102,6 +99,8 @@ class XboxController(
             ABS_Y -> Axis.LY
             ABS_RX -> Axis.RX
             ABS_RY -> Axis.RY
+            ABS_HAT0X -> Axis.HAT0X
+            ABS_HAT0Y -> Axis.HAT0Y
             else -> null
         }
     }
@@ -121,9 +120,5 @@ class XboxController(
             BTN_MODE -> Button.MODE
             else -> null
         }
-    }
-
-    private fun isDpadCode(code: Int): Boolean {
-        return code == ABS_HAT0X || code == ABS_HAT0Y
     }
 }
