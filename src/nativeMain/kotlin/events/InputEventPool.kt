@@ -1,20 +1,20 @@
 package events
 
-import ArrayBlockingQueue
+import utils.ArrayBlockingStack
 
 object InputEventPool {
 
-    private const val POOL_SIZE = 4096
+    private const val POOL_SIZE = 512
 
-    private val axisEventsPool = ArrayBlockingQueue<AxisEventImpl>(POOL_SIZE)
-    private val buttonEventsPool = ArrayBlockingQueue<ButtonEventImpl>(POOL_SIZE)
-    private val gyroEventsPool = ArrayBlockingQueue<GyroEventImpl>(POOL_SIZE)
-    private val touchpadEventsPool = ArrayBlockingQueue<TouchpadEventImpl>(POOL_SIZE)
-    private val vibrationEventsPool = ArrayBlockingQueue<VibrationEventImpl>(POOL_SIZE)
+    private val axisEventsPool = ArrayBlockingStack<AxisEventImpl>(POOL_SIZE)
+    private val buttonEventsPool = ArrayBlockingStack<ButtonEventImpl>(POOL_SIZE)
+    private val gyroEventsPool = ArrayBlockingStack<GyroEventImpl>(POOL_SIZE)
+    private val touchpadEventsPool = ArrayBlockingStack<TouchpadEventImpl>(POOL_SIZE)
+    private val vibrationEventsPool = ArrayBlockingStack<VibrationEventImpl>(POOL_SIZE)
 
     init {
         repeat(POOL_SIZE) {
-            buttonEventsPool.offer(
+            buttonEventsPool.add(
                 ButtonEventImpl(
                     timestamp = 0L,
                     button = Button.A,
@@ -22,7 +22,7 @@ object InputEventPool {
                 )
             )
 
-            axisEventsPool.offer(
+            axisEventsPool.add(
                 AxisEventImpl(
                     timestamp = 0,
                     axis = Axis.LT,
@@ -30,7 +30,7 @@ object InputEventPool {
                 )
             )
 
-            gyroEventsPool.offer(
+            gyroEventsPool.add(
                 GyroEventImpl(
                     timestamp = 0,
                     x = 0.0,
@@ -39,7 +39,7 @@ object InputEventPool {
                 )
             )
 
-            touchpadEventsPool.offer(
+            touchpadEventsPool.add(
                 TouchpadEventImpl(
                     timestamp = 0,
                     touchId = 0,
@@ -49,7 +49,7 @@ object InputEventPool {
                 )
             )
 
-            vibrationEventsPool.offer(
+            vibrationEventsPool.add(
                 VibrationEventImpl(
                     timestamp = 0,
                     leftMotorSpeed = 0u,
@@ -67,7 +67,7 @@ object InputEventPool {
         /**
          * let's think that we always have events in a pool
          */
-        val event = requireNotNull(buttonEventsPool.poll())
+        val event = requireNotNull(buttonEventsPool.pop())
 
         event.timestamp = timestamp
         event.button = button
@@ -84,7 +84,7 @@ object InputEventPool {
         /**
          * let's think that we always have events in a pool
          */
-        val event = requireNotNull(axisEventsPool.poll())
+        val event = requireNotNull(axisEventsPool.pop())
 
         event.timestamp = timestamp
         event.axis = axis
@@ -102,7 +102,7 @@ object InputEventPool {
         /**
          * let's think that we always have events in a pool
          */
-        val event = requireNotNull(gyroEventsPool.poll())
+        val event = requireNotNull(gyroEventsPool.pop())
 
         event.timestamp = timestamp
         event.x = x
@@ -122,7 +122,7 @@ object InputEventPool {
         /**
          * let's think that we always have events in a pool
          */
-        val event = requireNotNull(touchpadEventsPool.poll())
+        val event = requireNotNull(touchpadEventsPool.pop())
 
         event.timestamp = timestamp
         event.touchId = touchId
@@ -141,7 +141,7 @@ object InputEventPool {
         /**
          * let's think that we always have events in a pool
          */
-        val event = requireNotNull(vibrationEventsPool.poll())
+        val event = requireNotNull(vibrationEventsPool.pop())
 
         event.timestamp = timestamp
         event.leftMotorSpeed = leftMotorSpeed
@@ -152,11 +152,11 @@ object InputEventPool {
 
     fun release(event: InputEvent) {
         when (event) {
-            is ButtonEventImpl -> buttonEventsPool.offer(event)
-            is AxisEventImpl -> axisEventsPool.offer(event)
-            is GyroEventImpl -> gyroEventsPool.offer(event)
-            is TouchpadEventImpl -> touchpadEventsPool.offer(event)
-            is VibrationEventImpl -> vibrationEventsPool.offer(event)
+            is ButtonEventImpl -> buttonEventsPool.add(event)
+            is AxisEventImpl -> axisEventsPool.add(event)
+            is GyroEventImpl -> gyroEventsPool.add(event)
+            is TouchpadEventImpl -> touchpadEventsPool.add(event)
+            is VibrationEventImpl -> vibrationEventsPool.add(event)
             else -> {}
         }
     }
