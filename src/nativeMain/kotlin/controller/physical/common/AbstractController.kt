@@ -22,11 +22,16 @@ abstract class AbstractController(
         extraBufferCapacity = 1,
     )
 
+    protected var fd: Int = -1
+        private set
+
     protected val scope = CoroutineScope(newSingleThreadContext("PhysicalControllerDispatcher") + SupervisorJob())
 
     protected abstract fun handleUhidEvent(event: input_event)
 
     override fun start() {
+        fd = open(path, O_RDWR)
+
         startControllerLoop()
     }
 
@@ -34,13 +39,15 @@ abstract class AbstractController(
         scope.coroutineContext.cancel()
     }
 
+    protected fun write() {
+
+    }
+
     private fun startControllerLoop() {
         scope.launch {
-            val fd = open(path, O_RDONLY)
-
             memScoped {
                 val pollFd = alloc<pollfd>().apply {
-                    this.fd = fd
+                    fd = this@AbstractController.fd
                     events = POLLIN.toShort()
                 }
 
