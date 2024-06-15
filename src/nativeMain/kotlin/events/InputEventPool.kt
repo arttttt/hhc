@@ -4,13 +4,12 @@ import ArrayBlockingQueue
 
 object InputEventPool {
 
-    private const val POOL_SIZE = 512
+    private const val POOL_SIZE = 4096
 
     private val axisEventsPool = ArrayBlockingQueue<AxisEventImpl>(POOL_SIZE)
     private val buttonEventsPool = ArrayBlockingQueue<ButtonEventImpl>(POOL_SIZE)
     private val gyroEventsPool = ArrayBlockingQueue<GyroEventImpl>(POOL_SIZE)
     private val touchpadEventsPool = ArrayBlockingQueue<TouchpadEventImpl>(POOL_SIZE)
-    private val triggerEventsPool = ArrayBlockingQueue<TriggerEventImpl>(POOL_SIZE)
     private val vibrationEventsPool = ArrayBlockingQueue<VibrationEventImpl>(POOL_SIZE)
 
     init {
@@ -26,7 +25,7 @@ object InputEventPool {
             axisEventsPool.offer(
                 AxisEventImpl(
                     timestamp = 0,
-                    axis = Axis.L2_TRIGGER,
+                    axis = Axis.LT,
                     value = 0.0,
                 )
             )
@@ -47,14 +46,6 @@ object InputEventPool {
                     x = 0.0,
                     y = 0.0,
                     pressed = false,
-                )
-            )
-
-            triggerEventsPool.offer(
-                TriggerEventImpl(
-                    timestamp = 0,
-                    trigger = Trigger.LEFT,
-                    value = 0.0,
                 )
             )
 
@@ -142,23 +133,6 @@ object InputEventPool {
         return event
     }
 
-    fun obtainTriggerEvent(
-        timestamp: Long,
-        trigger: Trigger,
-        value: Double,
-    ): TriggerEvent {
-        /**
-         * let's think that we always have events in a pool
-         */
-        val event = requireNotNull(triggerEventsPool.poll())
-
-        event.timestamp = timestamp
-        event.trigger = trigger
-        event.value = value
-
-        return event
-    }
-
     fun obtainVibrationEvent(
         timestamp: Long,
         leftMotorSpeed: UByte,
@@ -182,14 +156,13 @@ object InputEventPool {
             is AxisEventImpl -> axisEventsPool.offer(event)
             is GyroEventImpl -> gyroEventsPool.offer(event)
             is TouchpadEventImpl -> touchpadEventsPool.offer(event)
-            is TriggerEventImpl -> triggerEventsPool.offer(event)
             is VibrationEventImpl -> vibrationEventsPool.offer(event)
             else -> {}
         }
     }
 }
 
-private class ButtonEventImpl(
+private data class ButtonEventImpl(
     override var timestamp: Long,
     override var button: Button,
     override var pressed: Boolean,
@@ -201,14 +174,14 @@ private data class AxisEventImpl(
     override var value: Double,
 ) : MutableAxisEvent, AxisEvent
 
-private class GyroEventImpl(
+private data class GyroEventImpl(
     override var timestamp: Long,
     override var x: Double,
     override var y: Double,
     override var z: Double,
 ) : MutableGyroEvent, GyroEvent
 
-private class TouchpadEventImpl(
+private data class TouchpadEventImpl(
     override var timestamp: Long,
     override var touchId: Int,
     override var x: Double,
@@ -216,13 +189,7 @@ private class TouchpadEventImpl(
     override var pressed: Boolean,
 ) : MutableTouchpadEvent, TouchpadEvent
 
-private class TriggerEventImpl(
-    override var timestamp: Long,
-    override var trigger: Trigger,
-    override var value: Double,
-) : MutableTriggerEvent, TriggerEvent
-
-private class VibrationEventImpl(
+private data class VibrationEventImpl(
     override var timestamp: Long,
     override var leftMotorSpeed: UByte,
     override var rightMotorSpeed: UByte,
