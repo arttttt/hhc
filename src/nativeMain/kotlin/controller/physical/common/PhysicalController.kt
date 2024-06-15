@@ -9,4 +9,6 @@ interface PhysicalController {
 
     fun start()
     fun stop()
+
+    fun consumeInputEvent(event: InputEvent)
 }

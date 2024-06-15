@@ -61,6 +61,9 @@ class XboxController(
         put(Axis.RY, joystickAbsInfo)
     }
 
+    override fun consumeInputEvent(event: InputEvent) {
+    }
+
     override fun handleUhidEvent(event: input_event) {
         val mappedEvent = when (event.type.toInt()) {
             EV_KEY -> handleKeys(event)
