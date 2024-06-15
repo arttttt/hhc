@@ -1,7 +1,5 @@
 package controller.virtual.dualsense.constants
 
-import kotlin.math.roundToInt
-
 val DS5_INPUT_REPORT_USB_OFS = 1
 val DS5_INPUT_REPORT_BT_OFS = 2
 
@@ -20,8 +18,3 @@ val STICK_X_MAX = UByte.MAX_VALUE.toDouble()
 val STICK_Y_MIN = UByte.MIN_VALUE.toDouble()
 val STICK_Y_MAX = UByte.MAX_VALUE.toDouble()
 val TRIGGER_MAX = UByte.MAX_VALUE.toDouble()
-
-fun denormalizeSignedValue(value: Double, min: Double, max: Double): UByte {
-    val scaledValue = (value * (max - min) / 2.0 + (max + min) / 2.0).roundToInt()
-    return scaledValue.toUByte()
-}

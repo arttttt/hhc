@@ -1,10 +1,12 @@
 package controller.virtual.common
 
 import controller.virtual.VirtualControllerConfig
+import events.InputEvent
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableSharedFlow
 import platform.posix.POLLIN
 import platform.posix.poll
 import platform.posix.pollfd
@@ -16,6 +18,10 @@ import uhid.UHidEvent
 abstract class AbstractVirtualController(
     private val deviceInfo: VirtualControllerConfig,
 ) : VirtualController {
+
+    override val events = MutableSharedFlow<InputEvent>(
+        extraBufferCapacity = 1,
+    )
 
     protected val uhidDevice = UHidDevice(
         name = deviceInfo.name,
