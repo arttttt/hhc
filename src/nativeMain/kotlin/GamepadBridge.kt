@@ -1,5 +1,6 @@
 import controller.physical.common.PhysicalController
 import controller.physical.detector.ControllerDetector
+import controller.physical.xbox.XboxController
 import controller.virtual.common.VirtualController
 import controller.virtual.dualsense.Dualsense
 import kotlinx.coroutines.CoroutineScope
@@ -53,15 +54,10 @@ class GamepadBridge(
     }
 
     private fun connectControllers() {
-        physicalController!!
-            .events
-            .onEach(virtualController::consumeInputEvent)
-            .launchIn(scope)
-
-        virtualController
-            .events
-            .onEach(physicalController!!::consumeInputEvent)
-            .launchIn(scope)
+        (physicalController as XboxController)
+            .states
+            .onEach(virtualController::consumeControllerState)
+            .launchIn(CoroutineScope(newSingleThreadContext("")))
 
     }
 }

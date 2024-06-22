@@ -1,14 +1,15 @@
 package controller.physical.common
 
-import events.InputEvent
+import controller.common.ControllerState
 import kotlinx.coroutines.flow.Flow
 
 interface PhysicalController {
+
     val name: String
-    val events: Flow<InputEvent>
+    val states: Flow<ControllerState>
 
     fun start()
     fun stop()
 
-    fun consumeInputEvent(event: InputEvent)
+    fun consumeControllerState(state: ControllerState)
 }

@@ -1,0 +1,3 @@
+package controller.common
+
+interface ControllerState

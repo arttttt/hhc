@@ -2,12 +2,13 @@ package controller.virtual.dualsense
 
 import USBPackedInputDataReport
 import controller.AbsInfo
+import controller.common.*
 import controller.virtual.VirtualControllerConfig
 import controller.virtual.common.AbstractVirtualController
 import controller.virtual.common.MacAddressFormatter
 import controller.virtual.dualsense.constants.*
-import events.*
 import fromByteArray
+import kotlinx.coroutines.flow.Flow
 import toByteArray
 import uhid.BUS_USB
 import uhid.UHidEvent
@@ -63,100 +64,113 @@ class Dualsense : AbstractVirtualController(
         put(Axis.RY, joystickAbsInfo)
     }
 
+    override val states: Flow<ControllerState>
+        get() = TODO("Not yet implemented")
+
     private var report = USBPackedInputDataReport.fromByteArray(UByteArray(64)).copy(
         reportId = 0x1u,
         dpad = Direction.None,
     )
 
-    override fun consumeInputEvent(event: InputEvent) {
-        when (event) {
-            is ButtonEvent -> {
-                report = when (event.button) {
+    override fun consumeControllerState(state: ControllerState) {
+        if (state is ButtonsState) {
+            state.buttons.forEach { (button, pressed) ->
+                report = when (button) {
                     Button.X -> report.copy(
-                        square = event.pressed,
+                        square = pressed,
                     )
+
                     Button.Y -> report.copy(
-                        triangle = event.pressed,
+                        triangle = pressed,
                     )
+
                     Button.B -> report.copy(
-                        circle = event.pressed,
+                        circle = pressed,
                     )
+
                     Button.A -> report.copy(
-                        cross = event.pressed,
+                        cross = pressed,
                     )
+
                     Button.LB -> report.copy(
-                        l1 = event.pressed
+                        l1 = pressed
                     )
+
                     Button.RB -> report.copy(
-                        r1 = event.pressed,
+                        r1 = pressed,
                     )
+
                     Button.LS -> report.copy(
-                        l3 = event.pressed,
+                        l3 = pressed,
                     )
+
                     Button.RS -> report.copy(
-                        r3 = event.pressed,
+                        r3 = pressed,
                     )
+
                     Button.MODE -> report.copy(
-                        ps = event.pressed,
+                        ps = pressed,
                     )
+
                     Button.SELECT -> report.copy(
-                        create = event.pressed,
+                        create = pressed,
                     )
+
                     Button.START -> report.copy(
-                        options = event.pressed,
+                        options = pressed,
                     )
                 }
-
-                uhidDevice.write(
-                    UHidEvent.Input(
-                        report.toByteArray()
-                    )
-                )
             }
-            is AxisEvent -> {
-                report = when (event.axis) {
+        }
+
+        if (state is AxisState) {
+            state.axis.forEach { (axis, value) ->
+                report = when (axis) {
                     Axis.LX -> report.copy(
-                        joystickLX = axisInfo.getValue(event.axis).denormalizeSignedValue(event.value)
+                        joystickLX = axisInfo.getValue(axis).denormalizeSignedValue(value)
                     )
                     Axis.LY -> report.copy(
-                        joystickLY = axisInfo.getValue(event.axis).denormalizeSignedValue(event.value)
+                        joystickLY = axisInfo.getValue(axis).denormalizeSignedValue(value)
                     )
                     Axis.RX -> report.copy(
-                        joystickRX = axisInfo.getValue(event.axis).denormalizeSignedValue(event.value)
+                        joystickRX = axisInfo.getValue(axis).denormalizeSignedValue(value)
                     )
                     Axis.RY -> report.copy(
-                        joystickRY = axisInfo.getValue(event.axis).denormalizeSignedValue(event.value)
+                        joystickRY = axisInfo.getValue(axis).denormalizeSignedValue(value)
                     )
                     Axis.LT -> report.copy(
-                        l2Trigger = axisInfo.getValue(event.axis).denormalize(event.value).toUByte()
+                        l2Trigger = axisInfo.getValue(axis).denormalize(value).toUByte()
                     )
                     Axis.RT -> report.copy(
-                        r2Trigger = axisInfo.getValue(event.axis).denormalize(event.value).toUByte()
+                        r2Trigger = axisInfo.getValue(axis).denormalize(value).toUByte()
                     )
-                    Axis.HAT0X -> report.copy(
-                        dpad = when (event.value) {
-                            -1.0 -> Direction.West
-                            1.0 -> Direction.East
-                            else -> Direction.None
-                        }
-                    )
-                    Axis.HAT0Y -> report.copy(
-                        dpad = when (event.value) {
-                            -1.0 -> Direction.North
-                            1.0 -> Direction.South
-                            else -> Direction.None
-                        }
-                    )
+                    Axis.HAT0X -> {
+                        report.copy(
+                            dpad = when (value) {
+                                -1.0 -> Direction.West
+                                1.0 -> Direction.East
+                                else -> Direction.None
+                            }
+                        )
+                    }
+                    Axis.HAT0Y -> {
+                        report.copy(
+                            dpad = when (value) {
+                                -1.0 -> Direction.North
+                                1.0 -> Direction.South
+                                else -> Direction.None
+                            }
+                        )
+                    }
                 }
-
-                uhidDevice.write(
-                    UHidEvent.Input(
-                        report.toByteArray()
-                    )
-                )
             }
-            else -> {}
         }
+
+        uhidDevice.write(
+            UHidEvent.Input(
+                report.toByteArray()
+            )
+        )
     }
 
     override fun handleUhidEvent(event: UHidEvent) {
@@ -215,12 +229,10 @@ class Dualsense : AbstractVirtualController(
 
         return if (value >= 0.0) {
             val maximum = maximum - mid
-            val value = value * maximum + mid
-            value.roundToInt().toUByte()
+            (value * maximum + mid).roundToInt().toUByte()
         } else {
             val minimum = minimum - mid
-            val value = normalValueAbs * minimum + mid
-            value.roundToInt().toUByte()
+            (normalValueAbs * minimum + mid).roundToInt().toUByte()
         }
     }
 

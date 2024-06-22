@@ -1,6 +1,5 @@
 package controller.physical.common
 
-import events.InputEvent
 import input.EV_SYN
 import input.input_event
 import kotlinx.cinterop.alloc
@@ -8,7 +7,6 @@ import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.sizeOf
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.MutableSharedFlow
 import platform.posix.*
 
 @Suppress("MemberVisibilityCanBePrivate")
@@ -17,10 +15,6 @@ abstract class AbstractController(
     val type: ControllerType,
     protected val path: String,
 ) : PhysicalController {
-
-    override val events = MutableSharedFlow<InputEvent>(
-        extraBufferCapacity = 1,
-    )
 
     protected var fd: Int = -1
         private set

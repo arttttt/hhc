@@ -1,15 +1,14 @@
 package controller.physical.xbox
 
 import controller.AbsInfo
+import controller.common.*
 import controller.physical.common.AbstractController
 import controller.physical.common.ControllerType
 import controller.physical.common.PhysicalController
 import controller.physical.factory.ControllerFactory
-import events.Axis
-import events.Button
-import events.InputEvent
-import events.InputEventPool
 import input.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 
 class XboxController(
     path: String,
@@ -32,6 +31,11 @@ class XboxController(
             )
         }
     }
+
+    data class InputState(
+        override val buttons: MutableMap<Button, Boolean>,
+        override val axis: MutableMap<Axis, Double>,
+    ) : ControllerState, ButtonsState, AxisState
 
     private val axisInfo: Map<Axis, AbsInfo> = buildMap {
         val dpadAbsInfo = AbsInfo(
@@ -61,37 +65,54 @@ class XboxController(
         put(Axis.RY, joystickAbsInfo)
     }
 
-    override fun consumeInputEvent(event: InputEvent) {
-    }
+    override val states = MutableStateFlow(
+        InputState(
+            buttons = Button
+                .entries
+                .associateWith { false }
+                .toMutableMap(),
+            axis = Axis
+                .entries
+                .associateWith { axis ->
+                    axisInfo.getValue(axis).normalize(0)
+                }
+                .toMutableMap(),
+        )
+    )
+
+    override fun consumeControllerState(state: ControllerState) {}
 
     override fun handleUhidEvent(event: input_event) {
-        val mappedEvent = when (event.type.toInt()) {
+        when (event.type.toInt()) {
             EV_KEY -> handleKeys(event)
             EV_ABS -> handleAxis(event)
-            else -> null
         }
-
-        mappedEvent?.let(events::tryEmit)
     }
 
-    private fun handleKeys(event: input_event): InputEvent? {
-        val button = codeToButton(event.code.toInt()) ?: return null
+    private fun handleKeys(event: input_event) {
+        val button = codeToButton(event.code.toInt()) ?: return
 
-        return InputEventPool.obtainButtonEvent(
-            timestamp = 0,
-            button = button,
-            pressed = event.value == 1
-        )
+        states.update { state ->
+            val newButtons = state.buttons.toMutableMap()
+            newButtons[button] = event.value == 1
+
+            state.copy(
+                buttons = newButtons,
+            )
+        }
     }
 
-    private fun handleAxis(event: input_event): InputEvent? {
-        val axis = codeToAxis(event.code.toInt()) ?: return null
+    private fun handleAxis(event: input_event) {
+        val axis = codeToAxis(event.code.toInt()) ?: return
 
-        return InputEventPool.obtainAxisEvent(
-            timestamp = 0,
-            axis = axis,
-            value = axisInfo.getValue(axis).normalize(event.value),
-        )
+        states.update { state ->
+            val newAxis = state.axis.toMutableMap()
+            newAxis[axis] = axisInfo.getValue(axis).normalize(event.value)
+
+            state.copy(
+                axis = newAxis,
+            )
+        }
     }
 
     private fun codeToAxis(code: Int): Axis? {

@@ -1,14 +1,14 @@
 package controller.virtual.common
 
-import events.InputEvent
+import controller.common.ControllerState
 import kotlinx.coroutines.flow.Flow
 
 interface VirtualController {
 
-    val events: Flow<InputEvent>
+    val states: Flow<ControllerState>
 
     fun create()
     fun destroy()
 
-    fun consumeInputEvent(event: InputEvent)
+    fun consumeControllerState(state: ControllerState)
 }
