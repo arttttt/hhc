@@ -54,7 +54,7 @@ class GamepadBridge(
     }
 
     private fun connectControllers() {
-        (physicalController as XboxController)
+        physicalController!!
             .states
             .onEach(virtualController::consumeControllerState)
             .launchIn(CoroutineScope(newSingleThreadContext("")))
