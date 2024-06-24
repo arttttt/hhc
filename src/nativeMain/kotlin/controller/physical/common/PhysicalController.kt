@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface PhysicalController {
 
+    val path: String
     val name: String
     val states: Flow<ControllerState>
 

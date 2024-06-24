@@ -13,7 +13,7 @@ import platform.posix.*
 abstract class AbstractController(
     override val name: String,
     val type: ControllerType,
-    protected val path: String,
+    override val path: String,
 ) : PhysicalController {
 
     protected var fd: Int = -1

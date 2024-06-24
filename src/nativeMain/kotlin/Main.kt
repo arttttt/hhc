@@ -1,12 +1,12 @@
-import controller.physical.factory.PhysicalControllerFactory
+import controller.bridge.GamepadBridgeImpl
 import controller.physical.detector.ControllerDetectorImpl
+import controller.physical.factory.PhysicalControllerFactory
 import controller.physical.xbox.XboxController
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.flowOn
+import controller.virtual.dualsense.Dualsense
 import platform.posix.sleep
 
 fun main() {
-    GamepadBridge(
+    GamepadBridgeImpl(
         controllerDetector = ControllerDetectorImpl(
             factory = PhysicalControllerFactory(
                 factories = mapOf(
@@ -14,6 +14,9 @@ fun main() {
                 )
             ),
         ),
+        virtualControllerFactory = {
+            Dualsense()
+        }
     ).start()
 
     //val dualsense = Dualsense()
