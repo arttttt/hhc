@@ -6,6 +6,8 @@ import controller.virtual.VirtualControllerFactory
 import controller.virtual.common.VirtualController
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class GamepadBridgeImpl(
     private val controllerDetector: ControllerDetector,
@@ -20,19 +22,23 @@ class GamepadBridgeImpl(
     private var activeController: PhysicalController? = null
     private var virtualController: VirtualController? = null
 
+    private val mutex = Mutex()
+
     override fun start() {
         detectionScope.launch {
             controllerDetector
                 .detectControllers()
                 .firstOrNull()
-                ?.let(::connectController)
+                ?.let { controller ->
+                    connectController(controller)
+                }
 
             controllerDetector
                 .controllerEventsFlow()
                 .filter { event ->
                     when (event) {
-                        is ControllerDetector.ControllerEvent.Attached -> activeController == null
-                        is ControllerDetector.ControllerEvent.Detached -> activeController?.path == event.path
+                        is ControllerDetector.ControllerEvent.Attached -> getActiveController() == null
+                        is ControllerDetector.ControllerEvent.Detached -> getActiveController()?.path == event.path
                     }
                 }
                 .collect { event ->
@@ -45,10 +51,9 @@ class GamepadBridgeImpl(
     }
 
     override fun stop() {
-        bridgeScope.coroutineContext.cancelChildren()
-        disconnectController()
-        virtualController?.destroy()
-        virtualController = null
+        runBlocking {
+            disconnectController()
+        }
     }
 
     override fun shutdown() {
@@ -59,11 +64,14 @@ class GamepadBridgeImpl(
         bridgeContext.close()
     }
 
-    private fun connectController(controller: PhysicalController) {
-        disconnectController()
-        activeController = controller
+    private suspend fun connectController(controller: PhysicalController) {
+        mutex.withLock {
+            activeController = controller
+        }
+
         controller.start()
         ensureVirtualControllerExists()
+
         bridgeScope.launch {
             controller.states.collect { state ->
                 virtualController?.consumeControllerState(state)
@@ -71,11 +79,13 @@ class GamepadBridgeImpl(
         }
     }
 
-    private fun disconnectController() {
-        bridgeScope.coroutineContext.cancelChildren()
-        activeController?.stop()
-        activeController = null
-        destroyVirtualController()
+    private suspend fun disconnectController() {
+        mutex.withLock {
+            bridgeScope.coroutineContext.cancelChildren()
+            activeController?.stop()
+            activeController = null
+            destroyVirtualController()
+        }
     }
 
     private fun ensureVirtualControllerExists() {
@@ -88,5 +98,9 @@ class GamepadBridgeImpl(
     private fun destroyVirtualController() {
         virtualController?.destroy()
         virtualController = null
+    }
+
+    private suspend fun getActiveController(): PhysicalController? {
+        return mutex.withLock { activeController }
     }
 }
