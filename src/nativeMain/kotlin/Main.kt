@@ -3,10 +3,50 @@ import controller.physical.detector.ControllerDetectorImpl
 import controller.physical.factory.PhysicalControllerFactory
 import controller.physical.xbox.XboxController
 import controller.virtual.dualsense.Dualsense
-import platform.posix.sleep
+import kotlinx.atomicfu.atomic
+import kotlinx.cinterop.staticCFunction
+import platform.posix.*
+
+@Suppress("UnusedReceiverParameter", "RemoveRedundantQualifierName")
+fun SignalHandler.registerSignals() {
+    signal(
+        SIGPOLL,
+        staticCFunction { _: Int ->
+            SignalHandler.handleSignal(SIGPOLL)
+        },
+    )
+    signal(
+        SIGINT,
+        staticCFunction { _: Int ->
+            SignalHandler.handleSignal(SIGINT)
+        },
+    )
+    signal(
+        SIGTERM,
+        staticCFunction { _: Int ->
+            SignalHandler.handleSignal(SIGTERM)
+        },
+    )
+}
+
+object SignalHandler {
+
+    private val shouldExit = atomic(false)
+
+    fun waitForSignal() {
+        while (!shouldExit.value) {
+            sleep(100u)
+        }
+    }
+
+    fun handleSignal(signal: Int) {
+        println("Received signal: $signal")
+        shouldExit.value = true
+    }
+}
 
 fun main() {
-    GamepadBridgeImpl(
+    val gamepadBridge = GamepadBridgeImpl(
         controllerDetector = ControllerDetectorImpl(
             factory = PhysicalControllerFactory(
                 factories = mapOf(
@@ -17,16 +57,12 @@ fun main() {
         virtualControllerFactory = {
             Dualsense()
         }
-    ).start()
+    )
 
-    //val dualsense = Dualsense()
+    gamepadBridge.start()
 
-    //dualsense.create()
+    SignalHandler.registerSignals()
+    SignalHandler.waitForSignal()
 
-    //XboxController().start()
-
-    // Clean up
-    sleep(20000000u)
-
-    //dualsense.destroy()
+    gamepadBridge.shutdown()
 }
