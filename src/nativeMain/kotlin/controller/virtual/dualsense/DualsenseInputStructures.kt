@@ -61,7 +61,6 @@ data class TouchData(
 
 @ExperimentalUnsignedTypes
 data class USBPackedInputDataReport(
-    val reportId: UByte,
     val joystickLX: UByte,
     val joystickLY: UByte,
     val joystickRX: UByte,
@@ -123,15 +122,18 @@ data class USBPackedInputDataReport(
     val aesCmac: ByteArray,
 ) {
 
-    companion object
+    companion object {
+
+        const val REPORT_ID: UByte = 0x01u
+    }
 }
 
 @ExperimentalUnsignedTypes
 fun USBPackedInputDataReport.Companion.fromByteArray(data: UByteArray): USBPackedInputDataReport {
     require(data.size >= 64) { "Data array is too short" }
+    require(data[0] == REPORT_ID) {}
 
     return USBPackedInputDataReport(
-        reportId = data[0],
         joystickLX = data[1],
         joystickLY = data[2],
         joystickRX = data[3],
@@ -204,7 +206,7 @@ fun USBPackedInputDataReport.Companion.fromByteArray(data: UByteArray): USBPacke
 fun USBPackedInputDataReport.toByteArray(): UByteArray {
     val result = UByteArray(64)
 
-    result[0] = this.reportId
+    result[0] = USBPackedInputDataReport.REPORT_ID
     result[1] = this.joystickLX
     result[2] = this.joystickLY
     result[3] = this.joystickRX
