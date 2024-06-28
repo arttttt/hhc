@@ -1,5 +1,8 @@
 package controller.virtual.dualsense
 
+import Direction
+import TouchData
+import TouchFingerData
 import USBPackedInputDataReport
 import controller.AbsInfo
 import controller.common.*
@@ -67,10 +70,32 @@ class Dualsense : AbstractVirtualController(
     override val states: Flow<ControllerState>
         get() = TODO("Not yet implemented")
 
-    private var report = USBPackedInputDataReport.fromByteArray(UByteArray(64)).copy(
-        reportId = 0x1u,
-        dpad = Direction.None,
-    )
+    private var report = USBPackedInputDataReport
+        .fromByteArray(
+            UByteArray(64).apply {
+                this[0] = 0x01u
+            }
+        )
+        .copy(
+            dpad = Direction.None,
+            touchData = TouchData(
+                timestamp = 0x0u,
+                touchFingerData = arrayOf(
+                    TouchFingerData(
+                        xLo = 0x80u,
+                        xHi = 0x80u,
+                        yLo = 0x80u,
+                        yHi = 0x80u,
+                    ),
+                    TouchFingerData(
+                        xLo = 0x80u,
+                        xHi = 0x80u,
+                        yLo = 0x80u,
+                        yHi = 0x80u,
+                    ),
+                ),
+            )
+        )
 
     override fun consumeControllerState(state: ControllerState) {
         if (state is ButtonsState) {
@@ -144,25 +169,16 @@ class Dualsense : AbstractVirtualController(
                     Axis.RT -> report.copy(
                         r2Trigger = axisInfo.getValue(axis).denormalize(value).toUByte()
                     )
-                    Axis.HAT0X -> {
-                        report.copy(
-                            dpad = when (value) {
-                                -1.0 -> Direction.West
-                                1.0 -> Direction.East
-                                else -> Direction.None
-                            }
-                        )
-                    }
-                    Axis.HAT0Y -> {
-                        report.copy(
-                            dpad = when (value) {
-                                -1.0 -> Direction.North
-                                1.0 -> Direction.South
-                                else -> Direction.None
-                            }
-                        )
-                    }
+                    else -> report
                 }
+            }
+
+            val (hat0x, hat0y) = state.axis[Axis.HAT0X] to state.axis[Axis.HAT0Y]
+
+            if (hat0x != null && hat0y != null) {
+                report = report.copy(
+                    dpad = Direction.from(hat0x, hat0y),
+                )
             }
         }
 
@@ -241,6 +257,23 @@ class Dualsense : AbstractVirtualController(
             (((value + 1.0) / 2.0) * (maximum - minimum) + minimum).toInt()
         } else {
             ((value * (maximum - minimum)) + minimum).toInt()
+        }
+    }
+
+    private fun Direction.Companion.from(
+        rawX: Double,
+        rawY: Double,
+    ): Direction {
+        return when {
+            rawX == 0.0 && rawY == -1.0 -> Direction.North
+            rawX == 1.0 && rawY == -1.0 -> Direction.NorthEast
+            rawX == 1.0 && rawY == 0.0 -> Direction.East
+            rawX == 1.0 && rawY == 1.0 -> Direction.SouthEast
+            rawX == 0.0 && rawY == 1.0 -> Direction.South
+            rawX == -1.0 && rawY == 1.0 -> Direction.SouthWest
+            rawX == -1.0 && rawY == 0.0 -> Direction.West
+            rawX == -1.0 && rawY == -1.0 -> Direction.NorthWest
+            else -> Direction.None
         }
     }
 }
