@@ -24,9 +24,11 @@ abstract class AbstractController(
     protected abstract fun handleUhidEvent(event: input_event)
 
     override fun start() {
-        fd = open(path, O_RDWR)
+        scope.launch {
+            fd = open(path, O_RDWR)
 
-        startControllerLoop()
+            startControllerLoop()
+        }
     }
 
     override fun stop() {
@@ -37,33 +39,31 @@ abstract class AbstractController(
 
     }
 
-    private fun startControllerLoop() {
-        scope.launch {
-            memScoped {
-                val pollFd = alloc<pollfd>().apply {
-                    fd = this@AbstractController.fd
-                    events = POLLIN.toShort()
-                }
+    private suspend fun startControllerLoop() {
+        memScoped {
+            val pollFd = alloc<pollfd>().apply {
+                fd = this@AbstractController.fd
+                events = POLLIN.toShort()
+            }
 
-                while (true) {
-                    ensureActive()
+            while (true) {
+                currentCoroutineContext().ensureActive()
 
-                    val ret = poll(pollFd.ptr, 1u, -1)
+                val ret = poll(pollFd.ptr, 1u, -1)
 
-                    if (ret == -1) throw IllegalStateException("Can not start polling")
+                if (ret == -1) throw IllegalStateException("Can not start polling")
 
-                    if (pollFd.revents.toInt() and POLLIN != 0) {
-                        val ev = alloc<input_event>()
-                        val bytesRead = read(fd, ev.ptr, sizeOf<input_event>().toULong())
-                        if (bytesRead < 0) {
-                            perror("Error reading from device")
-                            break
-                        }
-
-                        if (ev.type.toInt() == EV_SYN) continue
-
-                        handleUhidEvent(ev)
+                if (pollFd.revents.toInt() and POLLIN != 0) {
+                    val ev = alloc<input_event>()
+                    val bytesRead = read(fd, ev.ptr, sizeOf<input_event>().toULong())
+                    if (bytesRead < 0) {
+                        perror("Error reading from device")
+                        break
                     }
+
+                    if (ev.type.toInt() == EV_SYN) continue
+
+                    handleUhidEvent(ev)
                 }
             }
         }
