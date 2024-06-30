@@ -7,6 +7,7 @@ import controller.physical.common.ControllerType
 import controller.physical.common.PhysicalController
 import controller.physical.factory.ControllerFactory
 import input.*
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
@@ -65,19 +66,21 @@ class XboxController(
         put(Axis.RY, joystickAbsInfo)
     }
 
-    override val states = MutableStateFlow(
-        InputState(
-            buttons = Button
-                .entries
-                .associateWith { false }
-                .toMutableMap(),
-            axis = Axis
-                .entries
-                .associateWith { axis ->
-                    axisInfo.getValue(axis).normalize(0)
-                }
-                .toMutableMap(),
-        )
+    override val states = MutableSharedFlow<InputState>(
+        extraBufferCapacity = 1,
+    )
+
+    private val state = InputState(
+        buttons = Button
+            .entries
+            .associateWith { false }
+            .toMutableMap(),
+        axis = Axis
+            .entries
+            .associateWith { axis ->
+                axisInfo.getValue(axis).normalize(0)
+            }
+            .toMutableMap(),
     )
 
     override fun consumeControllerState(state: ControllerState) {}
@@ -92,27 +95,15 @@ class XboxController(
     private fun handleKeys(event: input_event) {
         val button = codeToButton(event.code.toInt()) ?: return
 
-        states.update { state ->
-            val newButtons = state.buttons.toMutableMap()
-            newButtons[button] = event.value == 1
-
-            state.copy(
-                buttons = newButtons,
-            )
-        }
+        state.buttons[button] = event.value == 1
+        states.tryEmit(state)
     }
 
     private fun handleAxis(event: input_event) {
         val axis = codeToAxis(event.code.toInt()) ?: return
 
-        states.update { state ->
-            val newAxis = state.axis.toMutableMap()
-            newAxis[axis] = axisInfo.getValue(axis).normalize(event.value)
-
-            state.copy(
-                axis = newAxis,
-            )
-        }
+        state.axis[axis] = axisInfo.getValue(axis).normalize(event.value)
+        states.tryEmit(state)
     }
 
     private fun codeToAxis(code: Int): Axis? {
