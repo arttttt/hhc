@@ -33,11 +33,13 @@ abstract class AbstractVirtualController(
     protected abstract fun handleUhidEvent(event: UHidEvent)
 
     override fun create() {
-        uhidDevice.open()
-        uhidDevice.create()
-        startControllerLoop()
+        scope.launch {
+            uhidDevice.open()
+            uhidDevice.create()
+            startControllerLoop()
 
-        println("virtual controller ${deviceInfo.name} created")
+            println("virtual controller ${deviceInfo.name} created")
+        }
     }
 
     override fun destroy() {
@@ -47,26 +49,24 @@ abstract class AbstractVirtualController(
         println("virtual controller ${deviceInfo.name} destroyed")
     }
 
-    private fun startControllerLoop() {
-        scope.launch {
-            memScoped {
-                val pollFd = alloc<pollfd>().apply {
-                    fd = uhidDevice.fd
-                    events = POLLIN.toShort()
-                }
+    private suspend fun startControllerLoop() {
+        memScoped {
+            val pollFd = alloc<pollfd>().apply {
+                fd = uhidDevice.fd
+                events = POLLIN.toShort()
+            }
 
-                while (true) {
-                    ensureActive()
+            while (true) {
+                currentCoroutineContext().ensureActive()
 
-                    val ret = poll(pollFd.ptr, 1u, -1)
+                val ret = poll(pollFd.ptr, 1u, -1)
 
-                    if (ret == -1) throw IllegalStateException("Can not start polling")
+                if (ret == -1) throw IllegalStateException("Can not start polling")
 
-                    if (pollFd.revents.toInt() and POLLIN != 0) {
-                        val event = uhidDevice.read()
+                if (pollFd.revents.toInt() and POLLIN != 0) {
+                    val event = uhidDevice.read()
 
-                        handleUhidEvent(event)
-                    }
+                    handleUhidEvent(event)
                 }
             }
         }
