@@ -61,26 +61,26 @@ data class TouchData(
 
 @ExperimentalUnsignedTypes
 data class USBPackedInputDataReport(
-    val joystickLX: UByte,
-    val joystickLY: UByte,
-    val joystickRX: UByte,
-    val joystickRY: UByte,
-    val l2Trigger: UByte,
-    val r2Trigger: UByte,
+    var joystickLX: UByte,
+    var joystickLY: UByte,
+    var joystickRX: UByte,
+    var joystickRY: UByte,
+    var l2Trigger: UByte,
+    var r2Trigger: UByte,
     val seqNumber: UByte,
-    val triangle: Boolean,
-    val circle: Boolean,
-    val cross: Boolean,
-    val square: Boolean,
-    val dpad: Direction,
-    val r3: Boolean,
-    val l3: Boolean,
-    val options: Boolean,
-    val create: Boolean,
+    var triangle: Boolean,
+    var circle: Boolean,
+    var cross: Boolean,
+    var square: Boolean,
+    var dpad: Direction,
+    var r3: Boolean,
+    var l3: Boolean,
+    var options: Boolean,
+    var create: Boolean,
     val r2: Boolean,
     val l2: Boolean,
-    val r1: Boolean,
-    val l1: Boolean,
+    var r1: Boolean,
+    var l1: Boolean,
     val rightPaddle: Boolean,
     val leftPaddle: Boolean,
     val rightFn: Boolean,
@@ -88,7 +88,7 @@ data class USBPackedInputDataReport(
     val unkn0: Boolean,
     val mute: Boolean,
     val touchpad: Boolean,
-    val ps: Boolean,
+    var ps: Boolean,
     val unkn1: UByte,
     val unknCounter: UInt,
     val gyroX: Short,
@@ -131,7 +131,7 @@ data class USBPackedInputDataReport(
 @ExperimentalUnsignedTypes
 fun USBPackedInputDataReport.Companion.fromByteArray(data: UByteArray): USBPackedInputDataReport {
     require(data.size >= 64) { "Data array is too short" }
-    require(data[0] == REPORT_ID) {}
+    require(data[0] == REPORT_ID) { "Incorrect report: ${data[0]}" }
 
     return USBPackedInputDataReport(
         joystickLX = data[1],
@@ -295,4 +295,117 @@ fun USBPackedInputDataReport.toByteArray(): UByteArray {
     }
 
     return result
+}
+
+@ExperimentalUnsignedTypes
+data class CompactInputDataReport(
+    var joystickLX: UByte,
+    var joystickLY: UByte,
+    var joystickRX: UByte,
+    var joystickRY: UByte,
+    var l2Trigger: UByte,
+    var r2Trigger: UByte,
+    var triangle: Boolean,
+    var circle: Boolean,
+    var cross: Boolean,
+    var square: Boolean,
+    var dpad: Direction,
+    var r3: Boolean,
+    var l3: Boolean,
+    var options: Boolean,
+    var create: Boolean,
+    var r1: Boolean,
+    var l1: Boolean,
+    var ps: Boolean,
+) {
+
+    companion object {
+
+        const val REPORT_ID: UByte = 0x01u
+    }
+
+    private val rawData: UByteArray = UByteArray(64).apply {
+        this[0] = REPORT_ID
+    }
+
+    fun getRawData(): UByteArray {
+        updateRawData(rawData)
+
+        return rawData
+    }
+}
+
+private fun CompactInputDataReport.updateRawData(rawData: UByteArray) {
+    rawData[1] = this.joystickLX
+    rawData[2] = this.joystickLY
+    rawData[3] = this.joystickRX
+    rawData[4] = this.joystickRY
+    rawData[5] = this.l2Trigger
+    rawData[6] = this.r2Trigger
+    rawData[7] = 0x0u
+    rawData[8] = ((if (this.triangle) 0b10000000 else 0) or
+            (if (this.circle) 0b01000000 else 0) or
+            (if (this.cross) 0b00100000 else 0) or
+            (if (this.square) 0b00010000 else 0) or
+            this.dpad.value.toInt()).toUByte()
+    rawData[9] = ((if (this.r3) 0b10000000 else 0) or
+            (if (this.l3) 0b01000000 else 0) or
+            (if (this.options) 0b00100000 else 0) or
+            (if (this.create) 0b00010000 else 0) or
+            (if (this.r1) 0b00000010 else 0) or
+            (if (this.l1) 0b00000001 else 0)).toUByte()
+    rawData[10] = if (this.ps) 0b00000001u else 0x0u
+    rawData[11] = 0x0u
+    rawData[12] = 0x0u
+    rawData[13] = 0x0u
+    rawData[14] = 0x0u
+    rawData[15] = 0x0u
+    rawData[16] = 0x0u
+    rawData[17] = 0x0u
+    rawData[18] = 0x0u
+    rawData[19] = 0x0u
+    rawData[20] = 0x0u
+    rawData[21] = 0x0u
+    rawData[22] = 0x0u
+    rawData[23] = 0x0u
+    rawData[24] = 0x0u
+    rawData[25] = 0x0u
+    rawData[26] = 0x0u
+    rawData[27] = 0x0u
+    rawData[28] = 0x0u
+    rawData[29] = 0x0u
+    rawData[30] = 0x0u
+    rawData[31] = 0x0u
+    rawData[32] = 0x0u
+    rawData[33] = 0x0u
+    rawData[34] = 0x0u
+    rawData[35] = 0x0u
+    rawData[36] = 0x0u
+    rawData[37] = 0x0u
+    rawData[38] = 0x0u
+    rawData[39] = 0x0u
+    rawData[40] = 0x0u
+    rawData[41] = 0x0u
+    rawData[42] = 0x0u
+    rawData[43] = 0x0u
+    rawData[44] = 0x0u
+    rawData[45] = 0x0u
+    rawData[46] = 0x0u
+    rawData[47] = 0x0u
+    rawData[48] = 0x0u
+    rawData[49] = 0x0u
+    rawData[50] = 0x0u
+    rawData[51] = 0x0u
+    rawData[52] = 0x0u
+    rawData[53] = 0x0u
+    rawData[54] = 0x0u
+    rawData[55] = 0x0u
+    rawData[56] = 0x0u
+    rawData[57] = 0x0u
+    rawData[58] = 0x0u
+    rawData[59] = 0x0u
+    rawData[60] = 0x0u
+    rawData[61] = 0x0u
+    rawData[62] = 0x0u
+    rawData[63] = 0x0u
 }

@@ -34,7 +34,7 @@ abstract class AbstractVirtualController(
     private val stateChannel = Channel<ControllerState>(Channel.BUFFERED)
 
     protected abstract fun handleUhidEvent(event: UHidEvent)
-    protected abstract suspend fun mapAndWriteState(state: ControllerState)
+    protected abstract suspend fun handleInputState(state: ControllerState)
 
     override fun create() {
         uhidScope.launch {
@@ -84,7 +84,7 @@ abstract class AbstractVirtualController(
 
     private suspend fun startStateProcessingLoop() {
         for (state in stateChannel) {
-            mapAndWriteState(state)
+            handleInputState(state)
         }
     }
 }

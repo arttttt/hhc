@@ -1,5 +1,6 @@
 package controller.virtual.dualsense
 
+import CompactInputDataReport
 import Direction
 import TouchData
 import TouchFingerData
@@ -70,42 +71,44 @@ class Dualsense : AbstractVirtualController(
     override val states: Flow<ControllerState>
         get() = TODO("Not yet implemented")
 
-    private var report = USBPackedInputDataReport
-        .fromByteArray(
-            UByteArray(64).apply {
-                this[0] = 0x01u
-            }
-        )
-        .copy(
-            dpad = Direction.None,
-            touchData = TouchData(
-                timestamp = 0x0u,
-                touchFingerData = arrayOf(
-                    TouchFingerData(
-                        xLo = 0x80u,
-                        xHi = 0x80u,
-                        yLo = 0x80u,
-                        yHi = 0x80u,
-                    ),
-                    TouchFingerData(
-                        xLo = 0x80u,
-                        xHi = 0x80u,
-                        yLo = 0x80u,
-                        yHi = 0x80u,
-                    ),
-                ),
-            )
-        )
+    private val report = CompactInputDataReport(
+        joystickLX = axisInfo.getValue(Axis.LX).denormalizeSignedValue(0.0),
+        joystickLY = axisInfo.getValue(Axis.LX).denormalizeSignedValue(0.0),
+        joystickRY = axisInfo.getValue(Axis.LX).denormalizeSignedValue(0.0),
+        joystickRX = axisInfo.getValue(Axis.LX).denormalizeSignedValue(0.0),
+        l2Trigger = axisInfo.getValue(Axis.LX).denormalize(0.0).toUByte(),
+        r2Trigger = axisInfo.getValue(Axis.LX).denormalize(0.0).toUByte(),
+        triangle = false,
+        circle = false,
+        cross = false,
+        square = false,
+        dpad = Direction.None,
+        r3 = false,
+        l3 = false,
+        options = false,
+        create = false,
+        r1 = false,
+        l1 = false,
+        ps = false,
+    )
 
-    override suspend fun mapAndWriteState(state: ControllerState) {
+    override suspend fun handleInputState(state: ControllerState) {
         when (state) {
             is ButtonsState -> handleButtonsState(state)
             is AxisState -> handleAxisState(state)
         }
 
+        if (state is ButtonsState) {
+            handleButtonsState(state)
+        }
+
+        if (state is AxisState) {
+            handleAxisState(state)
+        }
+
         uhidDevice.write(
             UHidEvent.Input(
-                report.toByteArray()
+                report.getRawData()
             )
         )
     }
@@ -124,41 +127,39 @@ class Dualsense : AbstractVirtualController(
 
     private fun handleButtonsState(state: ButtonsState) {
         state.buttons.forEach { (button, pressed) ->
-            report = when (button) {
-                Button.X -> report.copy(square = pressed)
-                Button.Y -> report.copy(triangle = pressed)
-                Button.B -> report.copy(circle = pressed)
-                Button.A -> report.copy(cross = pressed)
-                Button.LB -> report.copy(l1 = pressed)
-                Button.RB -> report.copy(r1 = pressed)
-                Button.LS -> report.copy(l3 = pressed)
-                Button.RS -> report.copy(r3 = pressed)
-                Button.MODE -> report.copy(ps = pressed)
-                Button.SELECT -> report.copy(create = pressed)
-                Button.START -> report.copy(options = pressed)
+            when (button) {
+                Button.X -> report.square = pressed
+                Button.Y -> report.triangle = pressed
+                Button.B -> report.circle = pressed
+                Button.A -> report.cross = pressed
+                Button.LB -> report.l1 = pressed
+                Button.RB -> report.r1 = pressed
+                Button.LS -> report.l3 = pressed
+                Button.RS -> report.r3 = pressed
+                Button.MODE -> report.ps = pressed
+                Button.SELECT -> report.create = pressed
+                Button.START -> report.options = pressed
             }
         }
     }
 
     private fun handleAxisState(state: AxisState) {
         state.axis.forEach { (axis, value) ->
-            report = when (axis) {
-                Axis.LX -> report.copy(joystickLX = axisInfo.getValue(axis).denormalizeSignedValue(value))
-                Axis.LY -> report.copy(joystickLY = axisInfo.getValue(axis).denormalizeSignedValue(value))
-                Axis.RX -> report.copy(joystickRX = axisInfo.getValue(axis).denormalizeSignedValue(value))
-                Axis.RY -> report.copy(joystickRY = axisInfo.getValue(axis).denormalizeSignedValue(value))
-                Axis.LT -> report.copy(l2Trigger = axisInfo.getValue(axis).denormalize(value).toUByte())
-                Axis.RT -> report.copy(r2Trigger = axisInfo.getValue(axis).denormalize(value).toUByte())
-                else -> report
+            when (axis) {
+                Axis.LX -> report.joystickLX = axisInfo.getValue(axis).denormalizeSignedValue(value)
+                Axis.LY -> report.joystickLY = axisInfo.getValue(axis).denormalizeSignedValue(value)
+                Axis.RX -> report.joystickRX = axisInfo.getValue(axis).denormalizeSignedValue(value)
+                Axis.RY -> report.joystickRY = axisInfo.getValue(axis).denormalizeSignedValue(value)
+                Axis.LT -> report.l2Trigger = axisInfo.getValue(axis).denormalize(value).toUByte()
+                Axis.RT -> report.r2Trigger = axisInfo.getValue(axis).denormalize(value).toUByte()
+                else -> {}
             }
         }
 
         val (hat0x, hat0y) = state.axis[Axis.HAT0X] to state.axis[Axis.HAT0Y]
 
         if (hat0x != null && hat0y != null) {
-            report = report.copy(
-                dpad = Direction.from(hat0x, hat0y),
-            )
+            report.dpad = Direction.from(hat0x, hat0y)
         }
     }
 
