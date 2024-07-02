@@ -21,14 +21,18 @@ class ButtonsStateOwnerImpl(
     }
 
     override fun setButtonState(code: ButtonCode, isPressed: Boolean): Boolean {
+        if (!buttonsState.containsKey(code)) return false
+
         buttonsState[code]?.isPressed = isPressed
 
-        return buttonsState.containsKey(code)
+        return true
     }
 
     override fun setButtonState(code: Int, isPressed: Boolean): Boolean {
+        if (!systemButtonsState.containsKey(code)) return false
+
         systemButtonsState[code]?.isPressed = isPressed
 
-        return systemButtonsState.containsKey(code)
+        return true
     }
 }
