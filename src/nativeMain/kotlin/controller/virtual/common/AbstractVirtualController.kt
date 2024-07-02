@@ -1,10 +1,12 @@
 package controller.virtual.common
 
+import controller.common.ControllerState
 import controller.virtual.VirtualControllerConfig
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import platform.posix.POLLIN
 import platform.posix.poll
 import platform.posix.pollfd
@@ -12,7 +14,6 @@ import uhid.BUS_USB
 import uhid.UHidDevice
 import uhid.UHidEvent
 
-@Suppress("MemberVisibilityCanBePrivate")
 abstract class AbstractVirtualController(
     private val deviceInfo: VirtualControllerConfig,
 ) : VirtualController {
@@ -28,25 +29,35 @@ abstract class AbstractVirtualController(
         reportDescriptor = deviceInfo.reportDescriptor,
     )
 
-    protected val scope = CoroutineScope(newSingleThreadContext("VirtualControllerDispatcher") + SupervisorJob())
+    protected val uhidScope = CoroutineScope(newSingleThreadContext("UHIDDispatcher") + SupervisorJob())
+    protected val stateProcessingScope = CoroutineScope(newSingleThreadContext("StateProcessingDispatcher") + SupervisorJob())
+    private val stateChannel = Channel<ControllerState>(Channel.BUFFERED)
 
     protected abstract fun handleUhidEvent(event: UHidEvent)
+    protected abstract suspend fun mapAndWriteState(state: ControllerState)
 
     override fun create() {
-        scope.launch {
+        uhidScope.launch {
             uhidDevice.open()
             uhidDevice.create()
             startControllerLoop()
-
-            println("virtual controller ${deviceInfo.name} created")
         }
+        stateProcessingScope.launch {
+            startStateProcessingLoop()
+        }
+        println("virtual controller ${deviceInfo.name} created")
     }
 
     override fun destroy() {
+        uhidScope.cancel()
+        stateProcessingScope.cancel()
         uhidDevice.write(UHidEvent.Destroy)
         uhidDevice.close()
-
         println("virtual controller ${deviceInfo.name} destroyed")
+    }
+
+    override fun consumeControllerState(state: ControllerState) {
+        stateChannel.trySend(state)
     }
 
     private suspend fun startControllerLoop() {
@@ -65,10 +76,15 @@ abstract class AbstractVirtualController(
 
                 if (pollFd.revents.toInt() and POLLIN != 0) {
                     val event = uhidDevice.read()
-
                     handleUhidEvent(event)
                 }
             }
+        }
+    }
+
+    private suspend fun startStateProcessingLoop() {
+        for (state in stateChannel) {
+            mapAndWriteState(state)
         }
     }
 }
