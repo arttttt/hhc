@@ -2,18 +2,13 @@ package controller.virtual.dualsense
 
 import CompactInputDataReport
 import Direction
-import TouchData
-import TouchFingerData
-import USBPackedInputDataReport
 import controller.AbsInfo
 import controller.common.*
 import controller.virtual.VirtualControllerConfig
 import controller.virtual.common.AbstractVirtualController
 import controller.virtual.common.MacAddressFormatter
 import controller.virtual.dualsense.constants.*
-import fromByteArray
 import kotlinx.coroutines.flow.Flow
-import toByteArray
 import uhid.BUS_USB
 import uhid.UHidEvent
 import kotlin.math.roundToInt

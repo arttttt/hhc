@@ -377,15 +377,22 @@ private fun CompactInputDataReport.updateRawData(rawData: UByteArray) {
     rawData[30] = 0x0u
     rawData[31] = 0x0u
     rawData[32] = 0x0u
-    rawData[33] = 0x0u
-    rawData[34] = 0x0u
-    rawData[35] = 0x0u
-    rawData[36] = 0x0u
-    rawData[37] = 0x0u
-    rawData[38] = 0x0u
-    rawData[39] = 0x0u
-    rawData[40] = 0x0u
-    rawData[41] = 0x0u
+
+    /**
+     * touchpad section [33, 41]
+     *
+     * 33, 37 - 127(0x7f) for touching, 128(0x80) for not touching
+     */
+    rawData[33] = 0x80u
+    rawData[34] = 0x00u
+    rawData[35] = 0x00u
+    rawData[36] = 0x00u
+    rawData[37] = 0x80u
+    rawData[38] = 0x00u
+    rawData[39] = 0x00u
+    rawData[40] = 0x00u
+    rawData[41] = 0x00u
+
     rawData[42] = 0x0u
     rawData[43] = 0x0u
     rawData[44] = 0x0u
