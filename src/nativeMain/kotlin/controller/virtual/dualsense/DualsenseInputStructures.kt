@@ -336,25 +336,75 @@ data class CompactInputDataReport(
 }
 
 private fun CompactInputDataReport.updateRawData(rawData: UByteArray) {
-    rawData[1] = this.joystickLX
-    rawData[2] = this.joystickLY
-    rawData[3] = this.joystickRX
-    rawData[4] = this.joystickRY
-    rawData[5] = this.l2Trigger
-    rawData[6] = this.r2Trigger
+    /**
+     * Analog sticks
+     *
+     * Each value is represented as an unsigned 8-bit integer (0-255)
+     * 128 is considered the neutral position
+     *
+     * Byte 1 - Left stick, X-axis
+     *          0 = full left, 255 = full right
+     * Byte 2 - Left stick, Y-axis
+     *          0 = full up, 255 = full down
+     * Byte 3 - Right stick, X-axis
+     *          0 = full left, 255 = full right
+     * Byte 4 - Right stick, Y-axis
+     *          0 = full up, 255 = full down
+     */
+    rawData[1] = joystickLX
+    rawData[2] = joystickLY
+    rawData[3] = joystickRX
+    rawData[4] = joystickRY
+
+    /**
+     * Analog triggers
+     *
+     * Each value is represented as an unsigned 8-bit integer (0-255)
+     * 0 = not pressed, 255 = fully pressed
+     *
+     * Byte 5 - Left trigger (L2)
+     * Byte 6 - Right trigger (R2)
+     */
+    rawData[5] = l2Trigger
+    rawData[6] = r2Trigger
+
     rawData[7] = 0x0u
-    rawData[8] = ((if (this.triangle) 0b10000000 else 0) or
-            (if (this.circle) 0b01000000 else 0) or
-            (if (this.cross) 0b00100000 else 0) or
-            (if (this.square) 0b00010000 else 0) or
-            this.dpad.value.toInt()).toUByte()
-    rawData[9] = ((if (this.r3) 0b10000000 else 0) or
-            (if (this.l3) 0b01000000 else 0) or
-            (if (this.options) 0b00100000 else 0) or
-            (if (this.create) 0b00010000 else 0) or
-            (if (this.r1) 0b00000010 else 0) or
-            (if (this.l1) 0b00000001 else 0)).toUByte()
-    rawData[10] = if (this.ps) 0b00000001u else 0x0u
+
+    /**
+     * Buttons and dpad section
+     *
+     * Bit definitions:
+     * [0-3] - D-pad:
+     *   0000 (0) - Released
+     *   0001 (1) - North
+     *   0010 (2) - North-East
+     *   0011 (3) - East
+     *   0100 (4) - South-East
+     *   0101 (5) - South
+     *   0110 (6) - South-West
+     *   0111 (7) - West
+     *   1000 (8) - North-West
+     * 4 - Square
+     * 5 - Cross
+     * 6 - Circle
+     * 7 - Triangle
+     */
+    rawData[8] = toButtonsByte()
+
+    /**
+     * Additional buttons section
+     *
+     * Bit definitions:
+     * 0 - L1
+     * 1 - R1
+     * 2 - Reserved (0)
+     * 3 - Reserved (0)
+     * 4 - Create
+     * 5 - Options
+     * 6 - L3
+     * 7 - R3
+     */
+    rawData[9] = toAdditionalButtonsByte()
     rawData[11] = 0x0u
     rawData[12] = 0x0u
     rawData[13] = 0x0u
@@ -415,4 +465,25 @@ private fun CompactInputDataReport.updateRawData(rawData: UByteArray) {
     rawData[61] = 0x0u
     rawData[62] = 0x0u
     rawData[63] = 0x0u
+}
+
+private fun CompactInputDataReport.toButtonsByte(): UByte {
+    return (
+            (if (triangle) 0b10000000 else 0) or
+                    (if (circle) 0b01000000 else 0) or
+                    (if (cross) 0b00100000 else 0) or
+                    (if (square) 0b00010000 else 0) or
+                    (dpad.value.toInt() and 0b00001111)
+            ).toUByte()
+}
+
+private fun CompactInputDataReport.toAdditionalButtonsByte(): UByte {
+    return (
+            (if (r3) 0b10000000 else 0) or
+                    (if (l3) 0b01000000 else 0) or
+                    (if (options) 0b00100000 else 0) or
+                    (if (create) 0b00010000 else 0) or
+                    (if (r1) 0b00000010 else 0) or
+                    (if (l1) 0b00000001 else 0)
+            ).toUByte()
 }
