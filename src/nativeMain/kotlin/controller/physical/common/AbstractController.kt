@@ -1,45 +1,66 @@
 package controller.physical.common
 
-import input.EV_SYN
-import input.input_event
+import controller.common.ControllerState
+import controller.common.rumble.RumbleHandler
+import controller.common.rumble.RumbleState
+import input.*
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.sizeOf
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import platform.posix.*
 
+/**
+ * todo: move out rumble handler
+ */
 @Suppress("MemberVisibilityCanBePrivate")
 abstract class AbstractController(
-    override val name: String,
+    final override val name: String,
+    final override val path: String,
     val type: ControllerType,
-    override val path: String,
 ) : PhysicalController {
 
     protected var fd: Int = -1
         private set
 
-    protected val scope = CoroutineScope(newSingleThreadContext("PhysicalControllerDispatcher") + SupervisorJob())
+    protected val inputEventsScope = CoroutineScope(newSingleThreadContext("${name}_input_scope") + SupervisorJob())
+    protected val outputEventsScope = CoroutineScope(newSingleThreadContext("${name}_output_scope") + SupervisorJob())
+
+    protected val outputEventsChannel = Channel<ControllerState>(Channel.BUFFERED)
+
+    protected val rumbleHandler = RumbleHandler()
 
     protected abstract fun handleUhidEvent(event: input_event)
 
     override fun start() {
-        scope.launch {
+        inputEventsScope.launch {
             fd = open(path, O_RDWR)
 
-            startControllerLoop()
+            startInputEventsLoop()
+        }
+
+        outputEventsScope.launch {
+            startOutputEventsLoop()
         }
     }
 
     override fun stop() {
-        scope.coroutineContext.cancel()
+        inputEventsScope.coroutineContext.cancel()
     }
 
-    protected fun write() {
-
+    protected fun write(state: ControllerState) {
+        outputEventsChannel.trySend(state)
     }
 
-    private suspend fun startControllerLoop() {
+    private suspend fun startOutputEventsLoop() {
+        for (event in outputEventsChannel) {
+            handleOutputState(event)
+        }
+    }
+
+    private suspend fun startInputEventsLoop() {
         memScoped {
             val pollFd = alloc<pollfd>().apply {
                 fd = this@AbstractController.fd
@@ -66,6 +87,19 @@ abstract class AbstractController(
                     handleUhidEvent(ev)
                 }
             }
+        }
+    }
+
+    private suspend fun handleOutputState(state: ControllerState) {
+        when (state) {
+            is RumbleState -> handleVibration(state)
+        }
+    }
+
+    private suspend fun handleVibration(state: RumbleState) {
+        when {
+            state.isEmpty() -> rumbleHandler.clearRumbleEffect(fd)
+            else -> rumbleHandler.rumble(fd, state)
         }
     }
 }

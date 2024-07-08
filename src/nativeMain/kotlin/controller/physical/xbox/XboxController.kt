@@ -8,6 +8,7 @@ import controller.physical.common.PhysicalController
 import controller.physical.factory.ControllerFactory
 import input.*
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlin.collections.set
 
 class XboxController(
     path: String,
@@ -34,7 +35,9 @@ class XboxController(
     data class InputState(
         override val buttons: MutableMap<Button, Boolean>,
         override val axis: MutableMap<Axis, Double>,
-    ) : ControllerState, ButtonsState, AxisState
+    ) : ControllerState,
+        ButtonsState,
+        AxisState
 
     private val axisInfo: Map<Axis, AbsInfo> = buildMap {
         val dpadAbsInfo = AbsInfo(
