@@ -4,6 +4,8 @@ import CompactInputDataReport
 import Direction
 import controller.AbsInfo
 import controller.common.*
+import controller.common.input.buttons.ButtonCode
+import controller.common.input.buttons.ButtonsStateOwner
 import controller.virtual.VirtualControllerConfig
 import controller.virtual.common.AbstractVirtualController
 import controller.virtual.common.MacAddressFormatter
@@ -88,12 +90,7 @@ class Dualsense : AbstractVirtualController(
     )
 
     override suspend fun handleInputState(state: ControllerState) {
-        when (state) {
-            is ButtonsState -> handleButtonsState(state)
-            is AxisState -> handleAxisState(state)
-        }
-
-        if (state is ButtonsState) {
+        if (state is ButtonsStateOwner) {
             handleButtonsState(state)
         }
 
@@ -120,20 +117,20 @@ class Dualsense : AbstractVirtualController(
         }
     }
 
-    private fun handleButtonsState(state: ButtonsState) {
-        state.buttons.forEach { (button, pressed) ->
-            when (button) {
-                Button.X -> report.square = pressed
-                Button.Y -> report.triangle = pressed
-                Button.B -> report.circle = pressed
-                Button.A -> report.cross = pressed
-                Button.LB -> report.l1 = pressed
-                Button.RB -> report.r1 = pressed
-                Button.LS -> report.l3 = pressed
-                Button.RS -> report.r3 = pressed
-                Button.MODE -> report.ps = pressed
-                Button.SELECT -> report.create = pressed
-                Button.START -> report.options = pressed
+    private fun handleButtonsState(state: ButtonsStateOwner) {
+        state.buttonsState.forEach { (_, button) ->
+            when (button.code) {
+                ButtonCode.X -> inputReport.square = button.isPressed
+                ButtonCode.Y -> inputReport.triangle = button.isPressed
+                ButtonCode.B -> inputReport.circle = button.isPressed
+                ButtonCode.A -> inputReport.cross = button.isPressed
+                ButtonCode.LB -> inputReport.l1 = button.isPressed
+                ButtonCode.RB -> inputReport.r1 = button.isPressed
+                ButtonCode.LS -> inputReport.l3 = button.isPressed
+                ButtonCode.RS -> inputReport.r3 = button.isPressed
+                ButtonCode.MODE -> inputReport.ps = button.isPressed
+                ButtonCode.SELECT -> inputReport.create = button.isPressed
+                ButtonCode.START -> inputReport.options = button.isPressed
             }
         }
     }

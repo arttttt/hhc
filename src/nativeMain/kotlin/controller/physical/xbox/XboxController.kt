@@ -2,6 +2,9 @@ package controller.physical.xbox
 
 import controller.AbsInfo
 import controller.common.*
+import controller.common.input.buttons.ButtonCode
+import controller.common.input.buttons.ButtonsStateOwner
+import controller.common.input.buttons.ButtonsStateOwnerImpl
 import controller.physical.common.AbstractController
 import controller.physical.common.ControllerType
 import controller.physical.common.PhysicalController
@@ -33,10 +36,23 @@ class XboxController(
     }
 
     data class InputState(
-        override val buttons: MutableMap<Button, Boolean>,
         override val axis: MutableMap<Axis, Double>,
     ) : ControllerState,
-        ButtonsState,
+        ButtonsStateOwner by ButtonsStateOwnerImpl(
+            supportedButtons = mapOf(
+                BTN_X to ButtonCode.X,
+                BTN_Y to ButtonCode.Y,
+                BTN_B to ButtonCode.B,
+                BTN_A to ButtonCode.A,
+                BTN_SELECT to ButtonCode.SELECT,
+                BTN_START to ButtonCode.START,
+                BTN_TL to ButtonCode.LB,
+                BTN_TR to ButtonCode.RB,
+                BTN_THUMBL to ButtonCode.LS,
+                BTN_THUMBR to ButtonCode.RS,
+                BTN_MODE to ButtonCode.MODE,
+            ),
+        ),
         AxisState
 
     private val axisInfo: Map<Axis, AbsInfo> = buildMap {
@@ -72,10 +88,6 @@ class XboxController(
     )
 
     private val state = InputState(
-        buttons = Button
-            .entries
-            .associateWith { false }
-            .toMutableMap(),
         axis = Axis
             .entries
             .associateWith { axis ->
@@ -94,9 +106,8 @@ class XboxController(
     }
 
     private fun handleKeys(event: input_event) {
-        val button = codeToButton(event.code.toInt()) ?: return
+        if (!state.setButtonState(event.code.toInt(), event.value == 1)) return
 
-        state.buttons[button] = event.value == 1
         states.tryEmit(state)
     }
 
@@ -122,22 +133,6 @@ class XboxController(
     }
 
     private fun codeToButton(code: Int): Button? {
-        return when (code) {
-            BTN_X -> Button.X
-            BTN_Y -> Button.Y
-            BTN_B -> Button.B
-            BTN_A -> Button.A
-            BTN_SELECT -> Button.SELECT
-            BTN_START ->Button.START
-            BTN_TL -> Button.LB
-            BTN_TR -> Button.RB
-            BTN_THUMBL -> Button.LS
-            BTN_THUMBR -> Button.RS
-            BTN_MODE -> Button.MODE
-            else -> null
-        }
-    }
-
     private fun AbsInfo.normalize(value: Int): Double {
         return if (minimum < 0) {
             2.0 * (value - minimum).toDouble() / (maximum - minimum).toDouble() - 1.0

@@ -1,6 +1,6 @@
-package controller.common
+package controller.common.input.buttons
 
-enum class Button {
+enum class ButtonCode {
     A,
     B,
     X,
