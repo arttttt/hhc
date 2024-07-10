@@ -2,8 +2,11 @@ package controller.virtual.dualsense
 
 import CompactInputDataReport
 import Direction
-import controller.AbsInfo
+import controller.common.normalization.NormalizationInfo
 import controller.common.*
+import controller.common.input.axis.Axis
+import controller.common.input.axis.AxisCode
+import controller.common.input.axis.AxisStateOwner
 import controller.common.input.buttons.ButtonCode
 import controller.common.input.buttons.ButtonsStateOwner
 import controller.virtual.VirtualControllerConfig
@@ -37,44 +40,44 @@ class Dualsense : AbstractVirtualController(
         private const val COUNTRY: UInt = 0u
     }
 
-    private val axisInfo: Map<Axis, AbsInfo> = buildMap {
-        val dpadAbsInfo = AbsInfo(
+    private val axisInfo: Map<AxisCode, NormalizationInfo> = buildMap {
+        val dpadAbsInfo = NormalizationInfo(
             minimum = -1,
             maximum = 1,
         )
 
-        put(Axis.HAT0X, dpadAbsInfo)
-        put(Axis.HAT0Y, dpadAbsInfo)
+        put(AxisCode.HAT0X, dpadAbsInfo)
+        put(AxisCode.HAT0Y, dpadAbsInfo)
 
-        val triggersAbsInfo = AbsInfo(
+        val triggersAbsInfo = NormalizationInfo(
             minimum = 0,
             maximum = UByte.MAX_VALUE.toInt(),
         )
 
-        put(Axis.LT, triggersAbsInfo)
-        put(Axis.RT, triggersAbsInfo)
+        put(AxisCode.LT, triggersAbsInfo)
+        put(AxisCode.RT, triggersAbsInfo)
 
-        val joystickAbsInfo = AbsInfo(
+        val joystickAbsInfo = NormalizationInfo(
             minimum = 0,
             maximum = UByte.MAX_VALUE.toInt(),
         )
 
-        put(Axis.LX, joystickAbsInfo)
-        put(Axis.LY, joystickAbsInfo)
-        put(Axis.RX, joystickAbsInfo)
-        put(Axis.RY, joystickAbsInfo)
+        put(AxisCode.LX, joystickAbsInfo)
+        put(AxisCode.LY, joystickAbsInfo)
+        put(AxisCode.RX, joystickAbsInfo)
+        put(AxisCode.RY, joystickAbsInfo)
     }
 
     override val states: Flow<ControllerState>
         get() = TODO("Not yet implemented")
 
-    private val report = CompactInputDataReport(
-        joystickLX = axisInfo.getValue(Axis.LX).denormalizeSignedValue(0.0),
-        joystickLY = axisInfo.getValue(Axis.LX).denormalizeSignedValue(0.0),
-        joystickRY = axisInfo.getValue(Axis.LX).denormalizeSignedValue(0.0),
-        joystickRX = axisInfo.getValue(Axis.LX).denormalizeSignedValue(0.0),
-        l2Trigger = axisInfo.getValue(Axis.LX).denormalize(0.0).toUByte(),
-        r2Trigger = axisInfo.getValue(Axis.LX).denormalize(0.0).toUByte(),
+    private val inputReport = CompactInputDataReport(
+        joystickLX = axisInfo.getValue(AxisCode.LX).denormalizeSignedValue(0.0),
+        joystickLY = axisInfo.getValue(AxisCode.LX).denormalizeSignedValue(0.0),
+        joystickRY = axisInfo.getValue(AxisCode.LX).denormalizeSignedValue(0.0),
+        joystickRX = axisInfo.getValue(AxisCode.LX).denormalizeSignedValue(0.0),
+        l2Trigger = axisInfo.getValue(AxisCode.LX).denormalize(0.0).toUByte(),
+        r2Trigger = axisInfo.getValue(AxisCode.LX).denormalize(0.0).toUByte(),
         triangle = false,
         circle = false,
         cross = false,
@@ -94,13 +97,13 @@ class Dualsense : AbstractVirtualController(
             handleButtonsState(state)
         }
 
-        if (state is AxisState) {
+        if (state is AxisStateOwner) {
             handleAxisState(state)
         }
 
         uhidDevice.write(
             UHidEvent.Input(
-                report.getRawData()
+                inputReport.getRawData()
             )
         )
     }
@@ -135,23 +138,23 @@ class Dualsense : AbstractVirtualController(
         }
     }
 
-    private fun handleAxisState(state: AxisState) {
-        state.axis.forEach { (axis, value) ->
-            when (axis) {
-                Axis.LX -> report.joystickLX = axisInfo.getValue(axis).denormalizeSignedValue(value)
-                Axis.LY -> report.joystickLY = axisInfo.getValue(axis).denormalizeSignedValue(value)
-                Axis.RX -> report.joystickRX = axisInfo.getValue(axis).denormalizeSignedValue(value)
-                Axis.RY -> report.joystickRY = axisInfo.getValue(axis).denormalizeSignedValue(value)
-                Axis.LT -> report.l2Trigger = axisInfo.getValue(axis).denormalize(value).toUByte()
-                Axis.RT -> report.r2Trigger = axisInfo.getValue(axis).denormalize(value).toUByte()
+    private fun handleAxisState(state: AxisStateOwner) {
+        state.axisState.forEach { (_, axis) ->
+            when (axis.code) {
+                AxisCode.LX -> inputReport.joystickLX = axisInfo.getValue(axis.code).denormalizeSignedValue(axis.value)
+                AxisCode.LY -> inputReport.joystickLY = axisInfo.getValue(axis.code).denormalizeSignedValue(axis.value)
+                AxisCode.RX -> inputReport.joystickRX = axisInfo.getValue(axis.code).denormalizeSignedValue(axis.value)
+                AxisCode.RY -> inputReport.joystickRY = axisInfo.getValue(axis.code).denormalizeSignedValue(axis.value)
+                AxisCode.LT -> inputReport.l2Trigger = axisInfo.getValue(axis.code).denormalize(axis.value).toUByte()
+                AxisCode.RT -> inputReport.r2Trigger = axisInfo.getValue(axis.code).denormalize(axis.value).toUByte()
                 else -> {}
             }
         }
 
-        val (hat0x, hat0y) = state.axis[Axis.HAT0X] to state.axis[Axis.HAT0Y]
+        val (hat0x, hat0y) = state.axisState[AxisCode.HAT0X] to state.axisState[AxisCode.HAT0Y]
 
         if (hat0x != null && hat0y != null) {
-            report.dpad = Direction.from(hat0x, hat0y)
+            inputReport.dpad = Direction.from(hat0x.value, hat0y.value)
         }
     }
 
@@ -193,7 +196,7 @@ class Dualsense : AbstractVirtualController(
         }
     }
 
-    private fun AbsInfo.denormalizeSignedValue(value: Double): UByte {
+    private fun NormalizationInfo.denormalizeSignedValue(value: Double): UByte {
         val mid = (maximum + minimum) / 2.0
         val normalValueAbs = kotlin.math.abs(value)
 
@@ -206,7 +209,7 @@ class Dualsense : AbstractVirtualController(
         }
     }
 
-    private fun AbsInfo.denormalize(value: Double): Int {
+    private fun NormalizationInfo.denormalize(value: Double): Int {
         return if (minimum < 0) {
             (((value + 1.0) / 2.0) * (maximum - minimum) + minimum).toInt()
         } else {

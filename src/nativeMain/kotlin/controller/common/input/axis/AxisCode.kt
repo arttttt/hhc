@@ -1,6 +1,6 @@
-package controller.common
+package controller.common.input.axis
 
-enum class Axis {
+enum class AxisCode {
     LX,
     LY,
     RX,

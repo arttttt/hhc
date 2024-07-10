@@ -1,17 +1,19 @@
 package controller.physical.xbox
 
-import controller.AbsInfo
-import controller.common.*
+import controller.common.ControllerState
+import controller.common.input.axis.AxisCode
+import controller.common.input.axis.AxisStateOwner
+import controller.common.input.axis.AxisStateOwnerImpl
 import controller.common.input.buttons.ButtonCode
 import controller.common.input.buttons.ButtonsStateOwner
 import controller.common.input.buttons.ButtonsStateOwnerImpl
+import controller.common.normalization.NormalizationInfo
 import controller.physical.common.AbstractController
 import controller.physical.common.ControllerType
 import controller.physical.common.PhysicalController
 import controller.physical.factory.ControllerFactory
 import input.*
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlin.collections.set
 
 class XboxController(
     path: String,
@@ -35,9 +37,7 @@ class XboxController(
         }
     }
 
-    data class InputState(
-        override val axis: MutableMap<Axis, Double>,
-    ) : ControllerState,
+    class InputState : ControllerState,
         ButtonsStateOwner by ButtonsStateOwnerImpl(
             supportedButtons = mapOf(
                 BTN_X to ButtonCode.X,
@@ -53,48 +53,41 @@ class XboxController(
                 BTN_MODE to ButtonCode.MODE,
             ),
         ),
-        AxisState
+        AxisStateOwner by AxisStateOwnerImpl(
+            supportedAxis = buildSet {
+                val dpadNormalizationInfo = NormalizationInfo(
+                    minimum = -1,
+                    maximum = 1,
+                )
 
-    private val axisInfo: Map<Axis, AbsInfo> = buildMap {
-        val dpadAbsInfo = AbsInfo(
-            minimum = -1,
-            maximum = 1,
+                add(Triple(ABS_HAT0X, AxisCode.HAT0X, dpadNormalizationInfo))
+                add(Triple(ABS_HAT0Y, AxisCode.HAT0Y, dpadNormalizationInfo))
+
+                val triggersNormalizationInfo = NormalizationInfo(
+                    minimum = 0,
+                    maximum = 1023,
+                )
+
+                add(Triple(ABS_Z, AxisCode.LT, triggersNormalizationInfo))
+                add(Triple(ABS_RZ, AxisCode.RT, triggersNormalizationInfo))
+
+                val joystickNormalizationInfo = NormalizationInfo(
+                    minimum = -32768,
+                    maximum = 32767,
+                )
+
+                add(Triple(ABS_X, AxisCode.LX, joystickNormalizationInfo))
+                add(Triple(ABS_Y, AxisCode.LY, joystickNormalizationInfo))
+                add(Triple(ABS_RX, AxisCode.RX, joystickNormalizationInfo))
+                add(Triple(ABS_RY, AxisCode.RY, joystickNormalizationInfo))
+            }
         )
-
-        put(Axis.HAT0X, dpadAbsInfo)
-        put(Axis.HAT0Y, dpadAbsInfo)
-
-        val triggersAbsInfo = AbsInfo(
-            minimum = 0,
-            maximum = 1023,
-        )
-
-        put(Axis.LT, triggersAbsInfo)
-        put(Axis.RT, triggersAbsInfo)
-
-        val joystickAbsInfo = AbsInfo(
-            minimum = -32768,
-            maximum = 32767,
-        )
-
-        put(Axis.LX, joystickAbsInfo)
-        put(Axis.LY, joystickAbsInfo)
-        put(Axis.RX, joystickAbsInfo)
-        put(Axis.RY, joystickAbsInfo)
-    }
 
     override val states = MutableSharedFlow<InputState>(
         extraBufferCapacity = 1,
     )
 
-    private val state = InputState(
-        axis = Axis
-            .entries
-            .associateWith { axis ->
-                axisInfo.getValue(axis).normalize(0)
-            }
-            .toMutableMap(),
-    )
+    private val state = InputState()
 
     override fun consumeControllerState(state: ControllerState) {}
 
@@ -112,32 +105,8 @@ class XboxController(
     }
 
     private fun handleAxis(event: input_event) {
-        val axis = codeToAxis(event.code.toInt()) ?: return
+        if (!state.setAxisState(event.code.toInt(), event.value)) return
 
-        state.axis[axis] = axisInfo.getValue(axis).normalize(event.value)
         states.tryEmit(state)
-    }
-
-    private fun codeToAxis(code: Int): Axis? {
-        return when (code) {
-            ABS_Z -> Axis.LT
-            ABS_RZ -> Axis.RT
-            ABS_X -> Axis.LX
-            ABS_Y -> Axis.LY
-            ABS_RX -> Axis.RX
-            ABS_RY -> Axis.RY
-            ABS_HAT0X -> Axis.HAT0X
-            ABS_HAT0Y -> Axis.HAT0Y
-            else -> null
-        }
-    }
-
-    private fun codeToButton(code: Int): Button? {
-    private fun AbsInfo.normalize(value: Int): Double {
-        return if (minimum < 0) {
-            2.0 * (value - minimum).toDouble() / (maximum - minimum).toDouble() - 1.0
-        } else {
-            (value - minimum).toDouble() / (maximum - minimum).toDouble()
-        }
     }
 }
