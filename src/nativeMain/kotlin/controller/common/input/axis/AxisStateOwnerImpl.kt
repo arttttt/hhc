@@ -14,7 +14,7 @@ class AxisStateOwnerImpl(
             AxisImpl(
                 code = code,
                 systemCode = systemCode,
-                value = 0.0,
+                value = normalizationInfo.normalize(0),
                 normalizationInfo = normalizationInfo,
             )
         }
