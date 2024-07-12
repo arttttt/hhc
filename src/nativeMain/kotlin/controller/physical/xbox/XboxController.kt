@@ -89,7 +89,10 @@ class XboxController(
 
     private val state = InputState()
 
-    override fun consumeControllerState(state: ControllerState) {}
+    override fun consumeControllerState(state: ControllerState) {
+        println("external state received: $state")
+        write(state)
+    }
 
     override fun handleUhidEvent(event: input_event) {
         when (event.type.toInt()) {

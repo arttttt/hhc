@@ -92,11 +92,11 @@ abstract class AbstractController(
 
     private suspend fun handleOutputState(state: ControllerState) {
         when (state) {
-            is RumbleState -> handleVibration(state)
+            is RumbleState -> handleRumble(state)
         }
     }
 
-    private suspend fun handleVibration(state: RumbleState) {
+    private suspend fun handleRumble(state: RumbleState) {
         when {
             state.isEmpty() -> rumbleHandler.clearRumbleEffect(fd)
             else -> rumbleHandler.rumble(fd, state)

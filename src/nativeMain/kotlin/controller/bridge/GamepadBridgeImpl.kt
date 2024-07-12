@@ -74,7 +74,13 @@ class GamepadBridgeImpl(
 
         bridgeScope.launch {
             controller.states.collect { state ->
-                virtualController?.consumeControllerState(state)
+                virtualController!!.consumeControllerState(state)
+            }
+        }
+
+        bridgeScope.launch {
+            virtualController!!.outputStates.collect { outputState ->
+                controller.consumeControllerState(outputState)
             }
         }
     }

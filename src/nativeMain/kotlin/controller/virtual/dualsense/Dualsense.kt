@@ -14,6 +14,7 @@ import controller.virtual.common.AbstractVirtualController
 import controller.virtual.common.MacAddressFormatter
 import controller.virtual.dualsense.constants.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import uhid.BUS_USB
 import uhid.UHidEvent
 import kotlin.math.roundToInt
@@ -68,8 +69,9 @@ class Dualsense : AbstractVirtualController(
         put(AxisCode.RY, joystickAbsInfo)
     }
 
-    override val states: Flow<ControllerState>
-        get() = TODO("Not yet implemented")
+    override val outputStates = MutableSharedFlow<CompactOutputDataReport>(
+        extraBufferCapacity = 1,
+    )
 
     private val inputReport = CompactInputDataReport(
         joystickLX = axisInfo.getValue(AxisCode.LX).denormalizeSignedValue(0.0),
@@ -90,6 +92,12 @@ class Dualsense : AbstractVirtualController(
         r1 = false,
         l1 = false,
         ps = false,
+    )
+
+    private val outputReport = CompactOutputDataReport(
+        enableRumbleEmulation = false,
+        strongRumble = 0.0,
+        weakRumble = 0.0,
     )
 
     override suspend fun handleInputState(state: ControllerState) {
@@ -115,7 +123,7 @@ class Dualsense : AbstractVirtualController(
             is UHidEvent.Close -> println("close")
             is UHidEvent.Stop -> println("stop")
             is UHidEvent.GetReport -> handleGetReport(event)
-            is UHidEvent.Output -> println("output")
+            is UHidEvent.Output -> handleOutput(event)
             else -> throw IllegalArgumentException("Unsupported event: $event")
         }
     }
@@ -156,6 +164,11 @@ class Dualsense : AbstractVirtualController(
         if (hat0x != null && hat0y != null) {
             inputReport.dpad = Direction.from(hat0x.value, hat0y.value)
         }
+    }
+
+    private fun handleOutput(event: UHidEvent.Output) {
+        outputReport.setRawData(event.data)
+        outputStates.tryEmit(outputReport)
     }
 
     private fun handleGetReport(event: UHidEvent.GetReport) {

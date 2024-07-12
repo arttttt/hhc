@@ -9,6 +9,7 @@ import kotlinx.cinterop.sizeOf
 import kotlinx.coroutines.suspendCancellableCoroutine
 import platform.posix.write
 import kotlin.coroutines.resume
+import kotlin.math.roundToInt
 
 class RumbleHandler {
 
@@ -33,8 +34,8 @@ class RumbleHandler {
                 val effect = alloc<ff_effect>().apply {
                     type = FF_RUMBLE.toUShort()
                     id = -1
-                    u.rumble.strong_magnitude = state.strong.toInt().toUShort()
-                    u.rumble.weak_magnitude = state.strong.toInt().toUShort()
+                    u.rumble.strong_magnitude = (state.strongRumble * UShort.MAX_VALUE.toInt()).roundToInt().toUShort()
+                    u.rumble.weak_magnitude = (state.weakRumble * UShort.MAX_VALUE.toInt()).roundToInt().toUShort()
                 }
 
                 rumbleEffectId.value = ioctl(fd, EVIOCSFF, effect)

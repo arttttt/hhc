@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface VirtualController {
 
-    val states: Flow<ControllerState>
+    val outputStates: Flow<ControllerState>
 
     fun create()
     fun destroy()

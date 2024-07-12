@@ -2,10 +2,17 @@ package controller.common.rumble
 
 interface RumbleState {
 
-    val strong: Float
-    val weak: Float
+    /**
+     * usually is on the right side
+     */
+    val weakRumble: Double
+
+    /**
+     * usually is on the left side
+     */
+    val strongRumble: Double
 
     fun isEmpty(): Boolean {
-        return strong == 0f && weak == 0f
+        return strongRumble == 0.0 && weakRumble == 0.0
     }
 }
