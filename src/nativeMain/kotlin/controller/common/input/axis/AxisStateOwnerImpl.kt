@@ -38,12 +38,4 @@ class AxisStateOwnerImpl(
 
         return true
     }
-
-    private fun NormalizationInfo.normalize(value: Int): Double {
-        return if (minimum < 0) {
-            2.0 * (value - minimum).toDouble() / (maximum - minimum).toDouble() - 1.0
-        } else {
-            (value - minimum).toDouble() / (maximum - minimum).toDouble()
-        }
-    }
 }

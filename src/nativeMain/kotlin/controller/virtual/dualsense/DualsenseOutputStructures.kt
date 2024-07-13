@@ -1,15 +1,20 @@
 package controller.virtual.dualsense
 
 import controller.common.ControllerState
-import controller.common.rumble.RumbleState
+import controller.common.normalization.NormalizationInfo
+import controller.common.rumble.RumbleStateOwner
+import controller.common.rumble.RumbleStateOwnerImpl
 
 @ExperimentalUnsignedTypes
 data class CompactOutputDataReport(
     var enableRumbleEmulation: Boolean,
-    override var strongRumble: Double,
-    override var weakRumble: Double
 ) : ControllerState,
-    RumbleState {
+    RumbleStateOwner by RumbleStateOwnerImpl(
+        normalizationInfo = NormalizationInfo(
+            minimum = UByte.MIN_VALUE.toInt(),
+            maximum = UByte.MAX_VALUE.toInt(),
+        )
+    ) {
 
     companion object {
 
@@ -51,6 +56,6 @@ private fun CompactOutputDataReport.updateFields(
     val offset = 1
 
     enableRumbleEmulation = (newData[offset + 0] and 0b00000001u) != 0x0u.toUByte()
-    weakRumble = newData[offset + 2].toDouble() / 255.0
-    strongRumble = newData[offset + 3].toDouble() / 255.0
+    setWeakRumbleValue(newData[offset + 2].toInt())
+    setStrongRumbleValue(newData[offset + 3].toInt())
 }

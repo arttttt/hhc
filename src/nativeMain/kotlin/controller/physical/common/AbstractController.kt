@@ -1,8 +1,10 @@
 package controller.physical.common
 
 import controller.common.ControllerState
+import controller.common.normalization.NormalizationInfo
 import controller.common.rumble.RumbleHandler
-import controller.common.rumble.RumbleState
+import controller.common.rumble.Rumble
+import controller.common.rumble.RumbleStateOwner
 import input.*
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
@@ -30,7 +32,12 @@ abstract class AbstractController(
 
     protected val outputEventsChannel = Channel<ControllerState>(Channel.BUFFERED)
 
-    protected val rumbleHandler = RumbleHandler()
+    protected val rumbleHandler = RumbleHandler(
+        normalizationInfo = NormalizationInfo(
+            minimum = UShort.MIN_VALUE.toInt(),
+            maximum = UShort.MAX_VALUE.toInt(),
+        )
+    )
 
     protected abstract fun handleUhidEvent(event: input_event)
 
@@ -92,11 +99,11 @@ abstract class AbstractController(
 
     private suspend fun handleOutputState(state: ControllerState) {
         when (state) {
-            is RumbleState -> handleRumble(state)
+            is RumbleStateOwner -> handleRumble(state.state)
         }
     }
 
-    private suspend fun handleRumble(state: RumbleState) {
+    private suspend fun handleRumble(state: Rumble) {
         when {
             state.isEmpty() -> rumbleHandler.clearRumbleEffect(fd)
             else -> rumbleHandler.rumble(fd, state)

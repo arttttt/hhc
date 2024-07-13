@@ -1,14 +1,16 @@
 package controller.common.rumble
 
-interface RumbleState {
+interface Rumble {
 
     /**
      * usually is on the right side
+     * normalized value
      */
     val weakRumble: Double
 
     /**
      * usually is on the left side
+     * normalized value
      */
     val strongRumble: Double
 

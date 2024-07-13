@@ -96,8 +96,6 @@ class Dualsense : AbstractVirtualController(
 
     private val outputReport = CompactOutputDataReport(
         enableRumbleEmulation = false,
-        strongRumble = 0.0,
-        weakRumble = 0.0,
     )
 
     override suspend fun handleInputState(state: ControllerState) {
@@ -206,27 +204,6 @@ class Dualsense : AbstractVirtualController(
 
                 uhidDevice.write(response)
             }
-        }
-    }
-
-    private fun NormalizationInfo.denormalizeSignedValue(value: Double): UByte {
-        val mid = (maximum + minimum) / 2.0
-        val normalValueAbs = kotlin.math.abs(value)
-
-        return if (value >= 0.0) {
-            val maximum = maximum - mid
-            (value * maximum + mid).roundToInt().toUByte()
-        } else {
-            val minimum = minimum - mid
-            (normalValueAbs * minimum + mid).roundToInt().toUByte()
-        }
-    }
-
-    private fun NormalizationInfo.denormalize(value: Double): Int {
-        return if (minimum < 0) {
-            (((value + 1.0) / 2.0) * (maximum - minimum) + minimum).toInt()
-        } else {
-            ((value * (maximum - minimum)) + minimum).toInt()
         }
     }
 
