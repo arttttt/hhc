@@ -1,8 +1,8 @@
 package controller.physical.detector
 
 import controller.physical.InputDeviceHwInfo
-import controller.physical.factory.PhysicalControllerFactory
 import controller.physical.common.PhysicalController
+import controller.physical.factory.PhysicalControllerFactory
 import input.EVIOCGID
 import input.input_id
 import kotlinx.cinterop.*
@@ -11,6 +11,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.isActive
 import platform.linux.*
 import platform.posix.*
 import platform.posix.ioctl
@@ -55,7 +56,7 @@ class ControllerDetectorImpl(
                 while (true) {
                     ensureActive()
 
-                    val pollResult = poll(pollFd.ptr, 1u, -1)
+                    val pollResult = poll(pollFd.ptr, 1u, 1000)
                     if (pollResult == -1) {
                         perror("poll")
                         break
@@ -86,6 +87,8 @@ class ControllerDetectorImpl(
                                     event.mask.toInt() and IN_CREATE != 0 -> {
                                         delay(1000)
 
+                                        ensureActive()
+
                                         getControllerInfo(path)
                                             ?.let(factory::create)
                                             ?.let(ControllerDetector.ControllerEvent::Attached)
@@ -104,6 +107,7 @@ class ControllerDetectorImpl(
             }
 
             awaitClose {
+                println("clearing resources in controllerEventsFlow")
                 inotify_rm_watch(fd, wd)
                 close(fd)
             }
