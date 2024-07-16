@@ -16,7 +16,11 @@ class GamepadBridgeImpl(
     private val detectionContext = newFixedThreadPoolContext(2, "ControllerDetectionContext")
     private val bridgeContext = newSingleThreadContext("ControllerBridgeContext")
 
-    private val detectionScope = CoroutineScope(SupervisorJob() + detectionContext)
+    private val detectionScope = CoroutineScope(SupervisorJob() + detectionContext + CoroutineExceptionHandler { _, throwable ->
+        /**
+         * do nothing
+         */
+    })
     private val bridgeScope = CoroutineScope(SupervisorJob() + bridgeContext)
 
     private var activeController: PhysicalController? = null
