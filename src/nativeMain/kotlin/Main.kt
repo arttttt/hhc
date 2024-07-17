@@ -1,6 +1,7 @@
 import controller.bridge.GamepadBridgeImpl
 import controller.physical.detector.ControllerDetectorImpl
 import controller.physical.factory.PhysicalControllerFactory
+import controller.physical.lego.LenovoLegionGoController
 import controller.physical.xbox.XboxController
 import controller.virtual.dualsense.Dualsense
 import kotlinx.atomicfu.atomic
@@ -50,7 +51,8 @@ fun main() {
         controllerDetector = ControllerDetectorImpl(
             factory = PhysicalControllerFactory(
                 factories = mapOf(
-                    (XboxController.Factory.vendor to XboxController.Factory.product) to XboxController.Factory
+                    (XboxController.Factory.vendor to XboxController.Factory.product) to XboxController.Factory,
+                    (LenovoLegionGoController.Factory.vendor to LenovoLegionGoController.Factory.product) to LenovoLegionGoController.Factory,
                 )
             ),
         ),
