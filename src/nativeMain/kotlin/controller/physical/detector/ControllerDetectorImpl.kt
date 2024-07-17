@@ -14,8 +14,8 @@ import kotlinx.coroutines.flow.callbackFlow
 import platform.linux.*
 import platform.posix.*
 import platform.posix.ioctl
+import utils.EVIOCGNAME
 
-@Suppress("FunctionName")
 class ControllerDetectorImpl(
     private val factory: PhysicalControllerFactory,
 ) : ControllerDetector {
@@ -189,20 +189,5 @@ class ControllerDetectorImpl(
             ret < 0 -> null
             else -> buffer.toKString()
         }
-    }
-
-    /**
-     * todo: move ioctl part out
-     */
-    private fun IOC(dir: ULong, type: ULong, nr: ULong, size: ULong): ULong {
-        return (dir shl _IOC_DIRSHIFT) or (type shl _IOC_TYPESHIFT) or (nr shl _IOC_NRSHIFT) or (size shl _IOC_SIZESHIFT)
-    }
-
-    private fun _IOR(type: ULong, nr: ULong, size: ULong): ULong {
-        return IOC(_IOC_READ.toULong(), type, nr, size)
-    }
-
-    private fun EVIOCGNAME(len: ULong): ULong {
-        return _IOR('E'.code.toULong(), 0x06u, len)
     }
 }

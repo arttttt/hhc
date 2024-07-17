@@ -2,14 +2,11 @@ package controller.physical.common
 
 import controller.common.ControllerState
 import controller.common.normalization.NormalizationInfo
-import controller.common.rumble.RumbleHandler
 import controller.common.rumble.Rumble
+import controller.common.rumble.RumbleHandler
 import controller.common.rumble.RumbleStateOwner
 import input.*
-import kotlinx.cinterop.alloc
-import kotlinx.cinterop.memScoped
-import kotlinx.cinterop.ptr
-import kotlinx.cinterop.sizeOf
+import kotlinx.cinterop.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import platform.posix.*
@@ -39,11 +36,22 @@ abstract class AbstractController(
         )
     )
 
+    private val gamepadGrabber = GamepadGrabber()
+
     protected abstract fun handleUhidEvent(event: input_event)
 
     override fun start() {
         inputEventsScope.launch {
             fd = open(path, O_RDWR)
+
+            if (fd == -1) {
+                throw IllegalStateException("Can not open the device: $path")
+            }
+
+            if (!gamepadGrabber.grab(fd)) {
+                close(fd)
+                throw IllegalStateException("Can not grab the device: $path")
+            }
 
             startInputEventsLoop()
         }
@@ -55,6 +63,12 @@ abstract class AbstractController(
 
     override fun stop() {
         inputEventsScope.coroutineContext.cancel()
+
+        if (fd == -1) return
+
+        gamepadGrabber.release(fd)
+        close(fd)
+        fd = -1
     }
 
     protected fun write(state: ControllerState) {
