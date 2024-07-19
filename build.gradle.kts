@@ -29,6 +29,12 @@ kotlin {
                     defFile("src/nativeInterop/cinterop/input.def")
                 }
             }
+
+            cinterops {
+                val hidraw by creating {
+                    defFile("src/nativeInterop/cinterop/hidraw.def")
+                }
+            }
         }
     }
 

@@ -1,0 +1,2 @@
+headers = linux/hidraw.h
+compilerOpts.linux = -I/usr/include
