@@ -3,8 +3,7 @@ package controller.physical.detector
 import controller.physical.InputDeviceHwInfo
 import controller.physical.common.PhysicalController
 import controller.physical.factory.PhysicalControllerFactory
-import input.EVIOCGID
-import input.input_id
+import hidraw.hidraw_devinfo
 import kotlinx.cinterop.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
@@ -14,16 +13,16 @@ import kotlinx.coroutines.flow.callbackFlow
 import platform.linux.*
 import platform.posix.*
 import platform.posix.ioctl
-import utils.EVIOCGNAME
+import utils.HIDIOCGRAWINFO
+import utils.HIDIOCGRAWNAME
 
-class ControllerDetectorImpl(
+class HidrawControllerDetector(
     private val factory: PhysicalControllerFactory,
 ) : ControllerDetector {
 
     companion object {
-
-        private const val INPUT_DIR_PATH = "/dev/input"
-        private const val DEVICE_PREFIX = "event"
+        private const val HIDRAW_DIR_PATH = "/dev"
+        private const val DEVICE_PREFIX = "hidraw"
     }
 
     override fun controllerEventsFlow(): Flow<ControllerDetector.ControllerEvent> {
@@ -35,14 +34,14 @@ class ControllerDetectorImpl(
             val fd = inotify_init1(IN_CLOEXEC)
             if (fd < 0) {
                 perror("inotify_init1")
-                close() // Закрываем Flow, если произошла ошибка
+                close()
                 return@callbackFlow
             }
 
-            val wd = inotify_add_watch(fd, INPUT_DIR_PATH, (IN_CREATE or IN_DELETE).toUInt())
+            val wd = inotify_add_watch(fd, HIDRAW_DIR_PATH, (IN_CREATE or IN_DELETE).toUInt())
             if (wd < 0) {
                 perror("inotify_add_watch")
-                close() // Закрываем Flow, если произошла ошибка
+                close()
                 return@callbackFlow
             }
 
@@ -75,13 +74,11 @@ class ControllerDetectorImpl(
                             if (event.len > 0u) {
                                 val name = event.name.toKString()
 
-                                val path = "$INPUT_DIR_PATH/${name}"
+                                val path = "$HIDRAW_DIR_PATH/${name}"
 
                                 when {
                                     !name.startsWith(DEVICE_PREFIX) -> {
-                                        /**
-                                         * do nothing
-                                         */
+                                        // Ничего не делаем
                                     }
                                     event.mask.toInt() and IN_CREATE != 0 -> {
                                         delay(1000)
@@ -106,7 +103,7 @@ class ControllerDetectorImpl(
             }
 
             awaitClose {
-                println("clearing resources in controllerEventsFlow")
+                println("Освобождение ресурсов в HidrawControllerDetector")
                 inotify_rm_watch(fd, wd)
                 close(fd)
             }
@@ -116,78 +113,64 @@ class ControllerDetectorImpl(
     override fun detectControllers(): List<PhysicalController> {
         val controllers = mutableListOf<PhysicalController>()
 
-        val inputDir = opendir(INPUT_DIR_PATH)
-        if (inputDir != null) {
+        val hidrawDir = opendir(HIDRAW_DIR_PATH)
+        if (hidrawDir != null) {
             var entry: dirent?
 
             while (true) {
-                entry = readdir(inputDir)?.pointed ?: break
+                entry = readdir(hidrawDir)?.pointed ?: break
 
                 val name = entry.d_name.toKString()
 
                 if (name.startsWith(DEVICE_PREFIX)) {
-                    val eventDevicePath = "$INPUT_DIR_PATH/$name"
-                    getControllerInfo(eventDevicePath)
+                    val hidrawDevicePath = "$HIDRAW_DIR_PATH/$name"
+                    getControllerInfo(hidrawDevicePath)
                         ?.let(factory::create)
                         ?.let(controllers::add)
                 }
             }
-            closedir(inputDir)
+            closedir(hidrawDir)
         }
 
         return controllers
     }
 
     private fun getControllerInfo(
-        eventDevicePath: String
+        hidrawDevicePath: String
     ): InputDeviceHwInfo? {
-        val fd = open(eventDevicePath, O_RDONLY)
+        val fd = open(hidrawDevicePath, O_RDONLY)
         if (fd < 0) {
-            perror("Error opening device: $eventDevicePath")
+            perror("Ошибка при открытии устройства: $hidrawDevicePath")
             return null
         }
 
         return try {
-            val name = readName(fd)
-            val (vendor, product) = readVendorAndProduct(fd)
-
-            when {
-                name != null && vendor != null && product != null -> {
-                    InputDeviceHwInfo(
-                        name = name,
-                        vendorId = vendor,
-                        productId = product,
-                        path = eventDevicePath,
-                    )
+            memScoped {
+                val hidrawDevInfo = alloc<hidraw_devinfo>()
+                if (ioctl(fd, HIDIOCGRAWINFO(sizeOf<hidraw_devinfo>().toULong()), hidrawDevInfo.ptr) < 0) {
+                    perror("Ошибка при получении информации об устройстве")
+                    return null
                 }
-                else -> null
+
+                val nameBuffer = ByteArray(256)
+                if (ioctl(fd, HIDIOCGRAWNAME(256u), nameBuffer.refTo(0)) < 0) {
+                    perror("Ошибка при получении имени устройства")
+                    return null
+                }
+
+                val name = nameBuffer.toKString()
+                val vendorId = hidrawDevInfo.vendor.toInt()
+                val productId = hidrawDevInfo.product.toInt()
+
+                InputDeviceHwInfo(
+                    name = name,
+                    vendorId = vendorId,
+                    productId = productId,
+                    path = hidrawDevicePath,
+                )
             }
         } finally {
             close(fd)
-        }
-    }
-
-    private fun readVendorAndProduct(fd: Int): Pair<Int?, Int?> {
-        return memScoped {
-            val id = alloc<input_id>()
-            val ret = ioctl(fd, EVIOCGID, id.ptr)
-
-            when {
-                ret < 0 -> null to null
-                id.vendor.toInt() == 0 || id.product.toInt() == 0 -> null to null
-                else -> id.vendor.toInt() to id.product.toInt()
-            }
-        }
-    }
-
-    private fun readName(fd: Int): String? {
-        val buffer = ByteArray(4096)
-
-        val ret = ioctl(fd, EVIOCGNAME(buffer.size.toULong()), buffer.refTo(0))
-
-        return when {
-            ret < 0 -> null
-            else -> buffer.toKString()
         }
     }
 }

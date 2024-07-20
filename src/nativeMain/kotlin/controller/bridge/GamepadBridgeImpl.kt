@@ -42,7 +42,7 @@ class GamepadBridgeImpl(
                 .filter { event ->
                     when (event) {
                         is ControllerDetector.ControllerEvent.Attached -> getActiveController() == null
-                        is ControllerDetector.ControllerEvent.Detached -> getActiveController()?.path == event.path
+                        is ControllerDetector.ControllerEvent.Detached -> getActiveController()?.hwInfo?.path == event.path
                     }
                 }
                 .collect { event ->

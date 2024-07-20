@@ -10,6 +10,8 @@ class PhysicalControllerFactory(
     fun create(
         hwInfo: InputDeviceHwInfo,
     ): PhysicalController? {
-        return factories[hwInfo.vendorId to hwInfo.productId]?.create(hwInfo.path)
+        val factory = factories[hwInfo.vendorId to hwInfo.productId]?.create(hwInfo) ?: return null
+
+        return factory
     }
 }

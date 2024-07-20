@@ -1,5 +1,6 @@
 package controller.physical.factory
 
+import controller.physical.InputDeviceHwInfo
 import controller.physical.common.PhysicalController
 
 interface ControllerFactory {
@@ -8,6 +9,6 @@ interface ControllerFactory {
     val product: Int
 
     fun create(
-        path: String,
+        hwInfo: InputDeviceHwInfo,
     ): PhysicalController
 }

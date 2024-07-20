@@ -1,12 +1,12 @@
 package controller.physical.common
 
 import controller.common.ControllerState
+import controller.physical.InputDeviceHwInfo
 import kotlinx.coroutines.flow.Flow
 
 interface PhysicalController {
 
-    val path: String
-    val name: String
+    val hwInfo: InputDeviceHwInfo
     val states: Flow<ControllerState>
 
     fun start()

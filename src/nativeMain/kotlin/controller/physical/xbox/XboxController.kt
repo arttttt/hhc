@@ -8,6 +8,7 @@ import controller.common.input.buttons.ButtonCode
 import controller.common.input.buttons.ButtonsStateOwner
 import controller.common.input.buttons.ButtonsStateOwnerImpl
 import controller.common.normalization.NormalizationInfo
+import controller.physical.InputDeviceHwInfo
 import controller.physical.common.AbstractController
 import controller.physical.common.ControllerType
 import controller.physical.common.PhysicalController
@@ -16,11 +17,10 @@ import input.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 
 class XboxController(
-    path: String,
+    hwInfo: InputDeviceHwInfo,
 ) : AbstractController(
-    name = "Xbox Series X/S Controller",
     type = ControllerType.GAMEPAD,
-    path = path,
+    hwInfo = hwInfo,
 ) {
 
     object Factory : ControllerFactory {
@@ -29,10 +29,10 @@ class XboxController(
         override val product: Int = 0x0b12
 
         override fun create(
-            path: String,
+            hwInfo: InputDeviceHwInfo,
         ): PhysicalController {
             return XboxController(
-                path = path,
+                hwInfo = hwInfo,
             )
         }
     }

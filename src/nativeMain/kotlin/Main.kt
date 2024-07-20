@@ -1,7 +1,8 @@
 import controller.bridge.GamepadBridgeImpl
-import controller.physical.detector.ControllerDetectorImpl
+import controller.physical.detector.CompositeDeviceDetector
+import controller.physical.detector.HidrawControllerDetector
+import controller.physical.detector.StandardControllerDetector
 import controller.physical.factory.PhysicalControllerFactory
-import controller.physical.lego.LenovoLegionGoController
 import controller.physical.xbox.XboxController
 import controller.virtual.dualsense.Dualsense
 import kotlinx.atomicfu.atomic
@@ -47,13 +48,27 @@ object SignalHandler {
 }
 
 fun main() {
+    val factory = PhysicalControllerFactory(
+        factories = mapOf(
+            (XboxController.Factory.vendor to XboxController.Factory.product) to XboxController.Factory,
+        )
+    )
+
     val gamepadBridge = GamepadBridgeImpl(
-        controllerDetector = ControllerDetectorImpl(
+/*        controllerDetector = ControllerDetectorImpl(
             factory = PhysicalControllerFactory(
                 factories = mapOf(
                     (XboxController.Factory.vendor to XboxController.Factory.product) to XboxController.Factory,
                     (LenovoLegionGoController.Factory.vendor to LenovoLegionGoController.Factory.product) to LenovoLegionGoController.Factory,
                 )
+            ),
+        ),*/
+        controllerDetector = CompositeDeviceDetector(
+            hidrawDetector = HidrawControllerDetector(
+                factory = factory,
+            ),
+            standardDetector = StandardControllerDetector(
+                factory = factory,
             ),
         ),
         virtualControllerFactory = {

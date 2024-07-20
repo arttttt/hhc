@@ -5,6 +5,7 @@ import controller.common.normalization.NormalizationInfo
 import controller.common.rumble.Rumble
 import controller.common.rumble.RumbleHandler
 import controller.common.rumble.RumbleStateOwner
+import controller.physical.InputDeviceHwInfo
 import input.*
 import kotlinx.cinterop.*
 import kotlinx.coroutines.*
@@ -16,16 +17,15 @@ import platform.posix.*
  */
 @Suppress("MemberVisibilityCanBePrivate")
 abstract class AbstractController(
-    final override val name: String,
-    final override val path: String,
+    final override val hwInfo: InputDeviceHwInfo,
     val type: ControllerType,
 ) : PhysicalController {
 
     protected var fd: Int = -1
         private set
 
-    protected val inputEventsScope = CoroutineScope(newSingleThreadContext("${name}_input_scope") + SupervisorJob())
-    protected val outputEventsScope = CoroutineScope(newSingleThreadContext("${name}_output_scope") + SupervisorJob())
+    protected val inputEventsScope = CoroutineScope(newSingleThreadContext("${hwInfo.name}_input_scope") + SupervisorJob())
+    protected val outputEventsScope = CoroutineScope(newSingleThreadContext("${hwInfo.name}_output_scope") + SupervisorJob())
 
     protected val outputEventsChannel = Channel<ControllerState>(Channel.BUFFERED)
 
@@ -42,15 +42,15 @@ abstract class AbstractController(
 
     override fun start() {
         inputEventsScope.launch {
-            fd = open(path, O_RDWR)
+            fd = open(hwInfo.path, O_RDWR)
 
             if (fd == -1) {
-                throw IllegalStateException("Can not open the device: $path")
+                throw IllegalStateException("Can not open the device: ${hwInfo.path}")
             }
 
             if (!gamepadGrabber.grab(fd)) {
                 close(fd)
-                throw IllegalStateException("Can not grab the device: $path")
+                throw IllegalStateException("Can not grab the device: ${hwInfo.path}")
             }
 
             startInputEventsLoop()

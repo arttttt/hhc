@@ -14,13 +14,13 @@ import controller.common.input.axis.AxisCode
 import controller.common.input.axis.AxisStateOwner
 import controller.common.input.axis.AxisStateOwnerImpl
 import controller.common.normalization.NormalizationInfo
+import controller.physical.InputDeviceHwInfo
 import kotlinx.coroutines.flow.MutableSharedFlow
 
 class LenovoLegionGoController(
-    path: String,
+    hwInfo: InputDeviceHwInfo,
 ) : AbstractController(
-    name = "Lenovo Legion Go Controller",
-    path = path,
+    hwInfo = hwInfo,
     type = ControllerType.GAMEPAD,
 ) {
 
@@ -30,10 +30,10 @@ class LenovoLegionGoController(
         override val product: Int = 0x6182
 
         override fun create(
-            path: String,
+            hwInfo: InputDeviceHwInfo,
         ): PhysicalController {
             return LenovoLegionGoController(
-                path = path,
+                hwInfo = hwInfo,
             )
         }
     }
