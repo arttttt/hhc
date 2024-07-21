@@ -9,6 +9,7 @@ import controller.common.input.buttons.ButtonsStateOwner
 import controller.common.input.buttons.ButtonsStateOwnerImpl
 import controller.common.normalization.NormalizationInfo
 import controller.physical.InputDeviceHwInfo
+import controller.physical.InputDeviceIds
 import controller.physical.common.AbstractController
 import controller.physical.common.ControllerType
 import controller.physical.common.PhysicalController
@@ -25,8 +26,10 @@ class XboxController(
 
     object Factory : ControllerFactory {
 
-        override val vendor: Int = 0x045e
-        override val product: Int = 0x0b12
+        override val ids: InputDeviceIds = InputDeviceIds(
+            vendorId = 0x045e,
+            productId = 0x0b12,
+        )
 
         override fun create(
             hwInfo: InputDeviceHwInfo,

@@ -1,6 +1,8 @@
 package controller.physical.detector
 
+import controller.physical.DeviceType
 import controller.physical.InputDeviceHwInfo
+import controller.physical.InputDeviceIds
 import controller.physical.common.PhysicalController
 import controller.physical.factory.PhysicalControllerFactory
 import hidraw.hidraw_devinfo
@@ -164,9 +166,12 @@ class HidrawControllerDetector(
 
                 InputDeviceHwInfo(
                     name = name,
-                    vendorId = vendorId,
-                    productId = productId,
+                    ids = InputDeviceIds(
+                        vendorId = vendorId,
+                        productId = productId,
+                    ),
                     path = hidrawDevicePath,
+                    type = DeviceType.HIDRAW,
                 )
             }
         } finally {

@@ -15,6 +15,7 @@ import controller.common.input.axis.AxisStateOwner
 import controller.common.input.axis.AxisStateOwnerImpl
 import controller.common.normalization.NormalizationInfo
 import controller.physical.InputDeviceHwInfo
+import controller.physical.InputDeviceIds
 import kotlinx.coroutines.flow.MutableSharedFlow
 
 class LenovoLegionGoController(
@@ -26,8 +27,10 @@ class LenovoLegionGoController(
 
     object Factory : ControllerFactory {
 
-        override val vendor: Int = 0x17ef
-        override val product: Int = 0x6182
+        override val ids: InputDeviceIds = InputDeviceIds(
+            vendorId = 0x17ef,
+            productId = 0x6182,
+        )
 
         override fun create(
             hwInfo: InputDeviceHwInfo,

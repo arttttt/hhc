@@ -1,6 +1,8 @@
 package controller.physical.detector
 
+import controller.physical.DeviceType
 import controller.physical.InputDeviceHwInfo
+import controller.physical.InputDeviceIds
 import controller.physical.common.PhysicalController
 import controller.physical.factory.PhysicalControllerFactory
 import input.EVIOCGID
@@ -155,9 +157,12 @@ class StandardControllerDetector(
                 name != null && vendor != null && product != null -> {
                     InputDeviceHwInfo(
                         name = name,
-                        vendorId = vendor,
-                        productId = product,
+                        ids = InputDeviceIds(
+                            vendorId = vendor,
+                            productId = product,
+                        ),
                         path = eventDevicePath,
+                        type = DeviceType.STANDARD,
                     )
                 }
                 else -> null

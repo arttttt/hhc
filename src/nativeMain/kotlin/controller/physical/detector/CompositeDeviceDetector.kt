@@ -14,7 +14,7 @@ class CompositeDeviceDetector(
 
         val filteredStandardControllers = standardControllers.filter { standardController ->
             hidrawControllers.none { hidrawController ->
-                hidrawController.hwInfo.vendorId == standardController.hwInfo.vendorId && hidrawController.hwInfo.productId == standardController.hwInfo.productId
+                hidrawController.hwInfo.ids == standardController.hwInfo.ids
             }
         }
 
