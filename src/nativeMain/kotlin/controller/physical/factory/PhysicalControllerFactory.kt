@@ -9,9 +9,11 @@ class PhysicalControllerFactory(
 ) {
 
     fun create(
-        hwInfo: InputDeviceHwInfo,
+        devices: Set<InputDeviceHwInfo>,
     ): PhysicalController? {
-        val factory = factories[hwInfo.ids]?.create(hwInfo) ?: return null
+        val hwInfo = devices.firstOrNull() ?: return null
+
+        val factory = factories[hwInfo.ids]?.create(devices) ?: return null
 
         return factory
     }

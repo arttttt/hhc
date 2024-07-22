@@ -90,10 +90,10 @@ class StandardControllerDetector(
 
                                         ensureActive()
 
-                                        getControllerInfo(path)
+                                        /*getControllerInfo(path)
                                             ?.let(factory::create)
                                             ?.let(ControllerDetector.ControllerEvent::Attached)
-                                            ?.let(::trySend)
+                                            ?.let(::trySend)*/
                                     }
                                     event.mask.toInt() and IN_DELETE != 0 -> {
                                         trySend(ControllerDetector.ControllerEvent.Detached(path))
@@ -122,6 +122,7 @@ class StandardControllerDetector(
         if (inputDir != null) {
             var entry: dirent?
 
+            val hwInfoMap = mutableMapOf<InputDeviceIds, MutableSet<InputDeviceHwInfo>>()
             while (true) {
                 entry = readdir(inputDir)?.pointed ?: break
 
@@ -129,12 +130,23 @@ class StandardControllerDetector(
 
                 if (name.startsWith(DEVICE_PREFIX)) {
                     val eventDevicePath = "$INPUT_DIR_PATH/$name"
-                    getControllerInfo(eventDevicePath)
-                        ?.let(factory::create)
-                        ?.let(controllers::add)
+
+                    val info = getControllerInfo(eventDevicePath) ?: continue
+                    val devices = hwInfoMap.getOrPut(
+                        key = info.ids,
+                        defaultValue = {
+                            mutableSetOf()
+                        }
+                    )
+
+                    devices += info
                 }
             }
             closedir(inputDir)
+
+            hwInfoMap.mapNotNullTo(controllers) { (_, devices) ->
+                factory.create(devices)
+            }
         }
 
         return controllers

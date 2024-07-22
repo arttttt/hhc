@@ -9,6 +9,6 @@ interface ControllerFactory {
     val ids: InputDeviceIds
 
     fun create(
-        hwInfo: InputDeviceHwInfo,
+        devices: Set<InputDeviceHwInfo>,
     ): PhysicalController
 }

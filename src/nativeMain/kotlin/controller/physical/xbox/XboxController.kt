@@ -32,10 +32,10 @@ class XboxController(
         )
 
         override fun create(
-            hwInfo: InputDeviceHwInfo,
+            devices: Set<InputDeviceHwInfo>,
         ): PhysicalController {
             return XboxController(
-                hwInfo = hwInfo,
+                hwInfo = devices.first(),
             )
         }
     }

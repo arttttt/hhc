@@ -62,9 +62,11 @@ fun main() {
             LenovoLegionGoController.Factory.ids to object : ControllerFactory {
                 override val ids: InputDeviceIds by LenovoLegionGoController.Factory::ids
 
-                override fun create(hwInfo: InputDeviceHwInfo): PhysicalController {
+                override fun create(
+                    devices: Set<InputDeviceHwInfo>
+                ): PhysicalController {
                     return object : PhysicalController {
-                        override val hwInfo: InputDeviceHwInfo = hwInfo
+                        override val hwInfo: InputDeviceHwInfo = devices.first()
 
                         override val states: Flow<ControllerState> = emptyFlow()
 

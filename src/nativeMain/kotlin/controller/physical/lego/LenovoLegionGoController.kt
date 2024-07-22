@@ -33,10 +33,10 @@ class LenovoLegionGoController(
         )
 
         override fun create(
-            hwInfo: InputDeviceHwInfo,
+            devices: Set<InputDeviceHwInfo>,
         ): PhysicalController {
             return LenovoLegionGoController(
-                hwInfo = hwInfo,
+                hwInfo = devices.first(),
             )
         }
     }

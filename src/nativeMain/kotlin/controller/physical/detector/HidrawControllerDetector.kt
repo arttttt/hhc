@@ -87,10 +87,10 @@ class HidrawControllerDetector(
 
                                         ensureActive()
 
-                                        getControllerInfo(path)
-                                            ?.let(factory::create)
-                                            ?.let(ControllerDetector.ControllerEvent::Attached)
-                                            ?.let(::trySend)
+//                                        getControllerInfo(path)
+//                                            ?.let(factory::create)
+//                                            ?.let(ControllerDetector.ControllerEvent::Attached)
+//                                            ?.let(::trySend)
                                     }
                                     event.mask.toInt() and IN_DELETE != 0 -> {
                                         trySend(ControllerDetector.ControllerEvent.Detached(path))
@@ -119,6 +119,7 @@ class HidrawControllerDetector(
         if (hidrawDir != null) {
             var entry: dirent?
 
+            val hwInfoMap = mutableMapOf<InputDeviceIds, MutableSet<InputDeviceHwInfo>>()
             while (true) {
                 entry = readdir(hidrawDir)?.pointed ?: break
 
@@ -126,12 +127,24 @@ class HidrawControllerDetector(
 
                 if (name.startsWith(DEVICE_PREFIX)) {
                     val hidrawDevicePath = "$HIDRAW_DIR_PATH/$name"
-                    getControllerInfo(hidrawDevicePath)
-                        ?.let(factory::create)
-                        ?.let(controllers::add)
+
+                    val info = getControllerInfo(hidrawDevicePath) ?: continue
+                    val devices = hwInfoMap.getOrPut(
+                        key = info.ids,
+                        defaultValue = {
+                            mutableSetOf()
+                        }
+                    )
+
+                    devices += info
                 }
             }
+
             closedir(hidrawDir)
+
+            hwInfoMap.mapNotNullTo(controllers) { (_, devices) ->
+                factory.create(devices)
+            }
         }
 
         return controllers
