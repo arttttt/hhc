@@ -37,14 +37,7 @@ abstract class AbstractPhysicalController(
 
     protected abstract fun onStateUpdated()
 
-    context(MemScope)
     override fun start(){
-        devices.associateByTo(deviceMap) { device ->
-            DeviceMapKey(
-                pollfd = device.open()
-            )
-        }
-
         inputEventsScope.launch {
             memScoped {
                 devices.associateByTo(deviceMap) { device ->

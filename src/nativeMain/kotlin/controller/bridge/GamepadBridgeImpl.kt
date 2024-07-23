@@ -2,6 +2,8 @@ package controller.bridge
 
 import controller.physical2.common.PhysicalController2
 import controller.physical2.detector.ControllerDetector2
+import controller.physical2.detector.DeviceDetector
+import controller.physical2.detector.DeviceDetectorImpl
 import controller.virtual.VirtualControllerFactory
 import controller.virtual.common.VirtualController
 import kotlinx.coroutines.*
@@ -27,14 +29,17 @@ class GamepadBridgeImpl(
 
     private val mutex = Mutex()
 
+    private val deviceDetector: DeviceDetector = DeviceDetectorImpl()
+
     override fun start() {
         detectionScope.launch {
-            controllerDetector
+            val controller = deviceDetector.detect() ?: controllerDetector
                 .detectControllers()
                 .firstOrNull()
-                ?.let { controller ->
-                    connectController(controller)
-                }
+
+            if (controller != null) {
+                connectController(controller)
+            }
 
 /*            controllerDetector
                 .controllerEventsFlow()

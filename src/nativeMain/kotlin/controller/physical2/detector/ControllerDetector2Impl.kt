@@ -3,7 +3,6 @@ package controller.physical2.detector
 import controller.physical.DeviceType
 import controller.physical.InputDeviceHwInfo
 import controller.physical.InputDeviceIds
-import controller.physical.common.PhysicalController
 import controller.physical2.common.EvdevDevice
 import controller.physical2.common.HidrawDevice
 import controller.physical2.common.PhysicalController2
@@ -19,9 +18,6 @@ import utils.EVIOCGNAME
 class ControllerDetector2Impl : ControllerDetector2 {
 
     companion object {
-
-        private const val PRODUCT_NAME_PATH = "/sys/devices/virtual/dmi/id/product_name"
-        private const val LENOVO_LEGION_GO = "83E1"
 
         private const val INPUT_DIR_PATH = "/dev/input"
         private const val DEVICE_PREFIX = "event"
