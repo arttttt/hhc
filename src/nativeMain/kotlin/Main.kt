@@ -10,6 +10,7 @@ import controller.physical.factory.ControllerFactory
 import controller.physical.factory.PhysicalControllerFactory
 import controller.physical.lego.LenovoLegionGoController
 import controller.physical.xbox.XboxController
+import controller.physical2.detector.ControllerDetector2Impl
 import controller.virtual.dualsense.Dualsense
 import kotlinx.atomicfu.atomic
 import kotlinx.cinterop.staticCFunction
@@ -59,55 +60,11 @@ fun main() {
     val factory = PhysicalControllerFactory(
         factories = mapOf(
             XboxController.Factory.ids to XboxController.Factory,
-            LenovoLegionGoController.Factory.ids to object : ControllerFactory {
-                override val ids: InputDeviceIds by LenovoLegionGoController.Factory::ids
-
-                override fun create(
-                    devices: Set<InputDeviceHwInfo>
-                ): PhysicalController {
-                    return object : PhysicalController {
-                        override val hwInfo: InputDeviceHwInfo = devices.first()
-
-                        override val states: Flow<ControllerState> = emptyFlow()
-
-                        override fun start() {
-                            println(
-                                """
-                                    name: ${hwInfo.name} started
-                                """.trimIndent()
-                            )
-                        }
-
-                        override fun stop() {
-                            println(
-                                """
-                                    name: ${hwInfo.name} stopped
-                                """.trimIndent()
-                            )
-                        }
-
-                        override fun consumeControllerState(state: ControllerState) {
-                            println(
-                                """
-                                    state consumed: $state
-                                """.trimIndent()
-                            )
-                        }
-                    }
-                }
-            }
         )
     )
 
     val gamepadBridge = GamepadBridgeImpl(
-        controllerDetector = CompositeDeviceDetector(
-            hidrawDetector = HidrawControllerDetector(
-                factory = factory,
-            ),
-            standardDetector = StandardControllerDetector(
-                factory = factory,
-            ),
-        ),
+        controllerDetector = ControllerDetector2Impl(),
         virtualControllerFactory = {
             Dualsense()
         }

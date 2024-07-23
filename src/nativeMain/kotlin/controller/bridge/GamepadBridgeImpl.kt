@@ -1,16 +1,15 @@
 package controller.bridge
 
-import controller.physical.common.PhysicalController
-import controller.physical.detector.ControllerDetector
+import controller.physical2.common.PhysicalController2
+import controller.physical2.detector.ControllerDetector2
 import controller.virtual.VirtualControllerFactory
 import controller.virtual.common.VirtualController
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 class GamepadBridgeImpl(
-    private val controllerDetector: ControllerDetector,
+    private val controllerDetector: ControllerDetector2,
     private val virtualControllerFactory: VirtualControllerFactory
 ) : GamepadBridge {
     private val detectionContext = newFixedThreadPoolContext(2, "ControllerDetectionContext")
@@ -23,7 +22,7 @@ class GamepadBridgeImpl(
     })
     private val bridgeScope = CoroutineScope(SupervisorJob() + bridgeContext)
 
-    private var activeController: PhysicalController? = null
+    private var activeController: PhysicalController2? = null
     private var virtualController: VirtualController? = null
 
     private val mutex = Mutex()
@@ -37,7 +36,7 @@ class GamepadBridgeImpl(
                     connectController(controller)
                 }
 
-            controllerDetector
+/*            controllerDetector
                 .controllerEventsFlow()
                 .filter { event ->
                     when (event) {
@@ -50,7 +49,7 @@ class GamepadBridgeImpl(
                         is ControllerDetector.ControllerEvent.Attached -> connectController(event.controller)
                         is ControllerDetector.ControllerEvent.Detached -> disconnectController()
                     }
-                }
+                }*/
         }
     }
 
@@ -68,7 +67,9 @@ class GamepadBridgeImpl(
         bridgeContext.close()
     }
 
-    private suspend fun connectController(controller: PhysicalController) {
+    private suspend fun connectController(
+        controller: PhysicalController2,
+    ) {
         mutex.withLock {
             activeController = controller
         }
@@ -110,7 +111,7 @@ class GamepadBridgeImpl(
         virtualController = null
     }
 
-    private suspend fun getActiveController(): PhysicalController? {
+    private suspend fun getActiveController(): PhysicalController2? {
         return mutex.withLock { activeController }
     }
 }
