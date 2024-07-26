@@ -1,7 +1,7 @@
 package controller.physical.common
 
 import controller.common.ControllerState
-import controller.common.normalization.NormalizationInfo
+import controller.common.normalization.NormalizationMode
 import controller.common.rumble.Rumble
 import controller.common.rumble.RumbleHandler
 import controller.common.rumble.RumbleStateOwner
@@ -30,10 +30,7 @@ abstract class AbstractController(
     protected val outputEventsChannel = Channel<ControllerState>(Channel.BUFFERED)
 
     protected val rumbleHandler = RumbleHandler(
-        normalizationInfo = NormalizationInfo(
-            minimum = UShort.MIN_VALUE.toInt(),
-            maximum = UShort.MAX_VALUE.toInt(),
-        )
+        normalizationMode = NormalizationMode.U16,
     )
 
     private val gamepadGrabber = GamepadGrabber()

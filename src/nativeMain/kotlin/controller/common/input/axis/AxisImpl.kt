@@ -1,16 +1,8 @@
 package controller.common.input.axis
 
-import controller.common.normalization.NormalizationInfo
+import controller.physical2.common.AxisMapping
 
 data class AxisImpl(
-    override val code: AxisCode,
-    override val systemCode: Int,
+    override val mapping: AxisMapping,
     override var value: Double,
-    /**
-     * raw value constraints for normalization
-     */
-    val normalizationInfo: NormalizationInfo,
-) : Axis {
-
-    override val isSigned: Boolean = normalizationInfo.minimum < 0
-}
+) : Axis

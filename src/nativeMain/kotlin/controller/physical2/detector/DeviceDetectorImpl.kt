@@ -59,7 +59,6 @@ class DeviceDetectorImpl : DeviceDetector {
                     val hidrawDevicePath = "$HIDRAW_DIR_PATH/$name"
 
                     val info = getControllerInfo(hidrawDevicePath) ?: continue
-
                     if (info.ids.vendorId != vid || info.ids.productId != pid) continue
 
                     inputDevices += createInputDevice(info)
@@ -107,7 +106,7 @@ class DeviceDetectorImpl : DeviceDetector {
                     return null
                 }
 
-                val name = nameBuffer.toKString()
+                val name = nameBuffer.toKString().trim()
                 val vendorId = hidrawDevInfo.vendor.toInt()
                 val productId = hidrawDevInfo.product.toInt()
 

@@ -1,7 +1,8 @@
 package controller.common.input.buttons
 
+import controller.physical2.common.ButtonMapping
+
 data class ButtonImpl(
-    override val code: ButtonCode,
-    override val systemCode: Int,
+    override val mapping: ButtonMapping,
     override var isPressed: Boolean,
 ) : Button

@@ -1,17 +1,13 @@
 package controller.common.input.axis
 
+import controller.physical2.common.AxisMapping
+
 interface Axis {
 
-    val systemCode: Int
-    val code: AxisCode
+    val mapping: AxisMapping
 
     /**
      * normalized value
      */
     val value: Double
-
-    /**
-     * can the value be negative or not
-     */
-    val isSigned: Boolean
 }

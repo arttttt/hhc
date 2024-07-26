@@ -317,6 +317,10 @@ data class CompactInputDataReport(
     var r1: Boolean,
     var l1: Boolean,
     var ps: Boolean,
+    var extraL1: Boolean,
+    var extraL2: Boolean,
+    var extraR1: Boolean,
+    var extraR2: Boolean,
 ) {
 
     companion object {

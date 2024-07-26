@@ -1,21 +1,22 @@
 package controller.common.rumble
 
-import controller.common.normalization.NormalizationInfo
+import controller.common.normalization.NormalizationMode
+import utils.normalize
 
 class RumbleStateOwnerImpl(
-    private val normalizationInfo: NormalizationInfo,
+    private val normalizationMode: NormalizationMode,
 ) : RumbleStateOwner {
 
     override val state = RumbleImpl(
-        weakRumble = normalizationInfo.normalize(0),
-        strongRumble = normalizationInfo.normalize(0),
+        weakRumble = normalize(0, normalizationMode),
+        strongRumble = normalize(0, normalizationMode),
     )
 
     override fun setWeakRumbleValue(rawValue: Int) {
-        state.weakRumble = normalizationInfo.normalize(rawValue)
+        state.weakRumble = normalize(rawValue, normalizationMode)
     }
 
     override fun setStrongRumbleValue(rawValue: Int) {
-        state.strongRumble = normalizationInfo.normalize(rawValue)
+        state.strongRumble = normalize(rawValue, normalizationMode)
     }
 }

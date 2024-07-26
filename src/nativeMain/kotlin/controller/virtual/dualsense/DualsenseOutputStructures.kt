@@ -1,7 +1,7 @@
 package controller.virtual.dualsense
 
 import controller.common.ControllerState
-import controller.common.normalization.NormalizationInfo
+import controller.common.normalization.NormalizationMode
 import controller.common.rumble.RumbleStateOwner
 import controller.common.rumble.RumbleStateOwnerImpl
 
@@ -10,10 +10,7 @@ data class CompactOutputDataReport(
     var enableRumbleEmulation: Boolean,
 ) : ControllerState,
     RumbleStateOwner by RumbleStateOwnerImpl(
-        normalizationInfo = NormalizationInfo(
-            minimum = UByte.MIN_VALUE.toInt(),
-            maximum = UByte.MAX_VALUE.toInt(),
-        )
+        normalizationMode = NormalizationMode.U8,
     ) {
 
     companion object {

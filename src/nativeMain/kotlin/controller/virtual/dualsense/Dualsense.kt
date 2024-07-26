@@ -1,23 +1,26 @@
 package controller.virtual.dualsense
 
-import CompactInputDataReport
 import Direction
-import controller.common.normalization.NormalizationInfo
-import controller.common.*
-import controller.common.input.axis.Axis
+import controller.common.ControllerState
 import controller.common.input.axis.AxisCode
 import controller.common.input.axis.AxisStateOwner
+import controller.common.input.axis.AxisStateOwnerImpl
+import controller.common.input.buttons.Button
 import controller.common.input.buttons.ButtonCode
 import controller.common.input.buttons.ButtonsStateOwner
+import controller.common.input.buttons.ButtonsStateOwnerImpl
+import controller.common.normalization.NormalizationMode
+import controller.physical2.common.AxisMapping
+import controller.physical2.common.ButtonMapping
 import controller.virtual.VirtualControllerConfig
 import controller.virtual.common.AbstractVirtualController
 import controller.virtual.common.MacAddressFormatter
 import controller.virtual.dualsense.constants.*
-import kotlinx.coroutines.flow.Flow
+import input.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import uhid.BUS_USB
 import uhid.UHidEvent
-import kotlin.math.roundToInt
+import utils.denormalize
 
 class Dualsense : AbstractVirtualController(
     deviceInfo = VirtualControllerConfig(
@@ -41,58 +44,252 @@ class Dualsense : AbstractVirtualController(
         private const val COUNTRY: UInt = 0u
     }
 
-    private val axisInfo: Map<AxisCode, NormalizationInfo> = buildMap {
-        val dpadAbsInfo = NormalizationInfo(
-            minimum = -1,
-            maximum = 1,
-        )
+    private class InputState : ControllerState,
+        ButtonsStateOwner by ButtonsStateOwnerImpl(
+            buttonsMapping = listOf(
+                ButtonMapping(
+                    systemCode = BTN_X,
+                    code = ButtonCode.X,
+                    location = 8 * 8 + 3,
+                ),
+                ButtonMapping(
+                    systemCode = BTN_Y,
+                    code = ButtonCode.Y,
+                    location = 8 * 8,
+                ),
+                ButtonMapping(
+                    systemCode = BTN_B,
+                    code = ButtonCode.B,
+                    location = 8 * 8 + 1,
+                ),
+                ButtonMapping(
+                    systemCode = BTN_A,
+                    code = ButtonCode.A,
+                    location = 8 * 8 + 2,
+                ),
+                ButtonMapping(
+                    systemCode = BTN_SELECT,
+                    code = ButtonCode.SELECT,
+                    location = 9 * 8 + 3,
+                ),
+                ButtonMapping(
+                    systemCode = BTN_START,
+                    code = ButtonCode.START,
+                    location = 9 * 8 + 2,
+                ),
+                ButtonMapping(
+                    systemCode = BTN_TL,
+                    code = ButtonCode.LB,
+                    location = 9 * 8 + 7,
+                ),
+                ButtonMapping(
+                    systemCode = BTN_TR,
+                    code = ButtonCode.RB,
+                    location = 9 * 8 + 6,
+                ),
+                ButtonMapping(
+                    systemCode = BTN_THUMBL,
+                    code = ButtonCode.LS,
+                    location = 9 * 8 + 1,
+                ),
+                ButtonMapping(
+                    systemCode = BTN_THUMBR,
+                    code = ButtonCode.RS,
+                    location = 9 * 8,
+                ),
+                ButtonMapping(
+                    systemCode = BTN_MODE,
+                    code = ButtonCode.MODE,
+                    location = 10 * 8 + 7,
+                ),
+                ButtonMapping(
+                    systemCode = ButtonMapping.UNKNOWN_SYSTEM_CODE,
+                    code = ButtonCode.EXTRA_L1,
+                    location = 10 * 8 + 3,
+                ),
+                ButtonMapping(
+                    systemCode = ButtonMapping.UNKNOWN_SYSTEM_CODE,
+                    code = ButtonCode.EXTRA_L2,
+                    location = 10 * 8 + 1,
+                ),
+                ButtonMapping(
+                    systemCode = ButtonMapping.UNKNOWN_SYSTEM_CODE,
+                    code = ButtonCode.EXTRA_R1,
+                    location = 10 * 8 + 2,
+                ),
+                ButtonMapping(
+                    systemCode = ButtonMapping.UNKNOWN_SYSTEM_CODE,
+                    code = ButtonCode.EXTRA_R2,
+                    location = 10 * 8,
+                ),
+                ButtonMapping(
+                    systemCode = ButtonMapping.UNKNOWN_SYSTEM_CODE,
+                    code = ButtonCode.EXTRA_R3,
+                    location = 10 * 8 + 4,
+                ),
+                ButtonMapping(
+                    systemCode = ButtonMapping.UNKNOWN_SYSTEM_CODE,
+                    code = ButtonCode.DPAD_LEFT,
+                    location = ButtonMapping.UNKNOWN_LOCATION
+                ),
+                ButtonMapping(
+                    systemCode = ButtonMapping.UNKNOWN_SYSTEM_CODE,
+                    code = ButtonCode.DPAD_UP,
+                    location = ButtonMapping.UNKNOWN_LOCATION
+                ),
+                ButtonMapping(
+                    systemCode = ButtonMapping.UNKNOWN_SYSTEM_CODE,
+                    code = ButtonCode.DPAD_RIGHT,
+                    location = ButtonMapping.UNKNOWN_LOCATION
+                ),
+                ButtonMapping(
+                    systemCode = ButtonMapping.UNKNOWN_SYSTEM_CODE,
+                    code = ButtonCode.DPAD_DOWN,
+                    location = ButtonMapping.UNKNOWN_LOCATION
+                )
+            ),
+        ),
+        AxisStateOwner by AxisStateOwnerImpl(
+            axisMapping = buildList {
+                add(
+                    AxisMapping(
+                        systemCode = AxisMapping.UNKNOWN_SYSTEM_CODE,
+                        code = AxisCode.LT,
+                        normalizationMode = NormalizationMode.U8,
+                        location = 5 * 8,
+                    )
+                )
 
-        put(AxisCode.HAT0X, dpadAbsInfo)
-        put(AxisCode.HAT0Y, dpadAbsInfo)
+                add(
+                    AxisMapping(
+                        systemCode = AxisMapping.UNKNOWN_SYSTEM_CODE,
+                        code = AxisCode.RT,
+                        normalizationMode = NormalizationMode.U8,
+                        location = 6 * 8,
+                    )
+                )
 
-        val triggersAbsInfo = NormalizationInfo(
-            minimum = 0,
-            maximum = UByte.MAX_VALUE.toInt(),
-        )
+                add(
+                    AxisMapping(
+                        systemCode = AxisMapping.UNKNOWN_SYSTEM_CODE,
+                        code = AxisCode.LX,
+                        location = 1 * 8,
+                        normalizationMode = NormalizationMode.U8,
+                    )
+                )
+                add(
+                    AxisMapping(
+                        systemCode = AxisMapping.UNKNOWN_SYSTEM_CODE,
+                        code = AxisCode.LY,
+                        location = 2 * 8,
+                        normalizationMode = NormalizationMode.U8,
+                    )
+                )
+                add(
+                    AxisMapping(
+                        systemCode = AxisMapping.UNKNOWN_SYSTEM_CODE,
+                        code = AxisCode.RX,
+                        location = 3 * 8,
+                        normalizationMode = NormalizationMode.U8,
+                    )
+                )
+                add(
+                    AxisMapping(
+                        systemCode = AxisMapping.UNKNOWN_SYSTEM_CODE,
+                        code = AxisCode.RY,
+                        location = 4 * 8,
+                        normalizationMode = NormalizationMode.U8,
+                    )
+                )
+            }
+        ) {
 
-        put(AxisCode.LT, triggersAbsInfo)
-        put(AxisCode.RT, triggersAbsInfo)
+        companion object {
 
-        val joystickAbsInfo = NormalizationInfo(
-            minimum = 0,
-            maximum = UByte.MAX_VALUE.toInt(),
-        )
+            const val REPORT_ID: UByte = 0x01u
+        }
 
-        put(AxisCode.LX, joystickAbsInfo)
-        put(AxisCode.LY, joystickAbsInfo)
-        put(AxisCode.RX, joystickAbsInfo)
-        put(AxisCode.RY, joystickAbsInfo)
+        private val rawData: UByteArray = UByteArray(64).apply {
+            this[0] = REPORT_ID
+        }
+
+        fun getRawData(): UByteArray {
+            val dpad = mutableListOf<Button>()
+            for ((_, button) in buttonsState) {
+                when (button.mapping.code) {
+                    ButtonCode.DPAD_LEFT -> dpad.add(0, button)
+                    ButtonCode.DPAD_UP -> dpad.add(1, button)
+                    ButtonCode.DPAD_RIGHT -> dpad.add(2, button)
+                    ButtonCode.DPAD_DOWN -> dpad.add(3, button)
+                    else -> {}
+                }
+
+                if (button.mapping.location == ButtonMapping.UNKNOWN_LOCATION) continue
+
+                val byteIndex = button.mapping.location / 8
+                val bitIndex = 7 - (button.mapping.location % 8)
+                val mask = 1 shl bitIndex
+
+                if (button.isPressed) {
+                    rawData[byteIndex] = (rawData[byteIndex].toInt() or mask).toUByte()
+                } else {
+                    rawData[byteIndex] = (rawData[byteIndex].toInt() and mask.inv()).toUByte()
+                }
+            }
+
+            val direction = convertDpadToDirection(
+                left = dpad[0],
+                up = dpad[1],
+                right = dpad[2],
+                down = dpad[3],
+            )
+
+            val buttonState = rawData[8].toInt() and 0xF0
+            val clearedState = buttonState.toUByte()
+            val newDpadState = direction.value and 0x0Fu
+
+            rawData[8] = (clearedState or newDpadState)
+
+            axisState.forEach { (_, axis) ->
+                val byteIndex = axis.mapping.location / 8
+
+                rawData[byteIndex] = denormalize(
+                    value = axis.value,
+                    mode = axis.mapping.normalizationMode,
+                ).toUByte()
+            }
+
+            rawData[33] = 0x80u
+            rawData[37] = 0x80u
+
+            return rawData
+        }
+
+        private fun convertDpadToDirection(
+            left: Button,
+            up: Button,
+            right: Button,
+            down: Button,
+        ): Direction {
+            return when {
+                up.isPressed && right.isPressed -> Direction.NorthEast
+                up.isPressed && left.isPressed -> Direction.NorthWest
+                down.isPressed && right.isPressed -> Direction.SouthEast
+                down.isPressed && left.isPressed -> Direction.SouthWest
+                up.isPressed -> Direction.North
+                right.isPressed -> Direction.East
+                down.isPressed -> Direction.South
+                left.isPressed -> Direction.West
+                else -> Direction.None
+            }
+        }
     }
 
     override val outputStates = MutableSharedFlow<CompactOutputDataReport>(
         extraBufferCapacity = 1,
     )
 
-    private val inputReport = CompactInputDataReport(
-        joystickLX = axisInfo.getValue(AxisCode.LX).denormalizeSignedValue(0.0),
-        joystickLY = axisInfo.getValue(AxisCode.LX).denormalizeSignedValue(0.0),
-        joystickRY = axisInfo.getValue(AxisCode.LX).denormalizeSignedValue(0.0),
-        joystickRX = axisInfo.getValue(AxisCode.LX).denormalizeSignedValue(0.0),
-        l2Trigger = axisInfo.getValue(AxisCode.LX).denormalize(0.0).toUByte(),
-        r2Trigger = axisInfo.getValue(AxisCode.LX).denormalize(0.0).toUByte(),
-        triangle = false,
-        circle = false,
-        cross = false,
-        square = false,
-        dpad = Direction.None,
-        r3 = false,
-        l3 = false,
-        options = false,
-        create = false,
-        r1 = false,
-        l1 = false,
-        ps = false,
-    )
+    private val inputState = InputState()
 
     private val outputReport = CompactOutputDataReport(
         enableRumbleEmulation = false,
@@ -107,9 +304,11 @@ class Dualsense : AbstractVirtualController(
             handleAxisState(state)
         }
 
+        val data = inputState.getRawData()
+
         uhidDevice.write(
             UHidEvent.Input(
-                inputReport.getRawData()
+                data
             )
         )
     }
@@ -127,40 +326,21 @@ class Dualsense : AbstractVirtualController(
     }
 
     private fun handleButtonsState(state: ButtonsStateOwner) {
-        state.buttonsState.forEach { (_, button) ->
-            when (button.code) {
-                ButtonCode.X -> inputReport.square = button.isPressed
-                ButtonCode.Y -> inputReport.triangle = button.isPressed
-                ButtonCode.B -> inputReport.circle = button.isPressed
-                ButtonCode.A -> inputReport.cross = button.isPressed
-                ButtonCode.LB -> inputReport.l1 = button.isPressed
-                ButtonCode.RB -> inputReport.r1 = button.isPressed
-                ButtonCode.LS -> inputReport.l3 = button.isPressed
-                ButtonCode.RS -> inputReport.r3 = button.isPressed
-                ButtonCode.MODE -> inputReport.ps = button.isPressed
-                ButtonCode.SELECT -> inputReport.create = button.isPressed
-                ButtonCode.START -> inputReport.options = button.isPressed
-            }
+        state.buttonsState.forEach { (code, button) ->
+            inputState.setButtonState(
+                code = code,
+                isPressed = button.isPressed,
+            )
         }
     }
 
     private fun handleAxisState(state: AxisStateOwner) {
-        state.axisState.forEach { (_, axis) ->
-            when (axis.code) {
-                AxisCode.LX -> inputReport.joystickLX = axisInfo.getValue(axis.code).denormalizeSignedValue(axis.value)
-                AxisCode.LY -> inputReport.joystickLY = axisInfo.getValue(axis.code).denormalizeSignedValue(axis.value)
-                AxisCode.RX -> inputReport.joystickRX = axisInfo.getValue(axis.code).denormalizeSignedValue(axis.value)
-                AxisCode.RY -> inputReport.joystickRY = axisInfo.getValue(axis.code).denormalizeSignedValue(axis.value)
-                AxisCode.LT -> inputReport.l2Trigger = axisInfo.getValue(axis.code).denormalize(axis.value).toUByte()
-                AxisCode.RT -> inputReport.r2Trigger = axisInfo.getValue(axis.code).denormalize(axis.value).toUByte()
-                else -> {}
-            }
-        }
-
-        val (hat0x, hat0y) = state.axisState[AxisCode.HAT0X] to state.axisState[AxisCode.HAT0Y]
-
-        if (hat0x != null && hat0y != null) {
-            inputReport.dpad = Direction.from(hat0x.value, hat0y.value)
+        state.axisState.forEach { (code, axis) ->
+            inputState.setAxisState(
+                code = code,
+                value = axis.value,
+                fromMode = axis.mapping.normalizationMode,
+            )
         }
     }
 

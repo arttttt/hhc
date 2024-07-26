@@ -1,6 +1,6 @@
 package controller.common.rumble
 
-import controller.common.normalization.NormalizationInfo
+import controller.common.normalization.NormalizationMode
 import input.*
 import kotlinx.atomicfu.atomic
 import kotlinx.cinterop.alloc
@@ -9,11 +9,12 @@ import kotlinx.cinterop.ptr
 import kotlinx.cinterop.sizeOf
 import kotlinx.coroutines.suspendCancellableCoroutine
 import platform.posix.write
+import utils.denormalize
 import kotlin.coroutines.resume
 import kotlin.math.roundToInt
 
 class RumbleHandler(
-    private val normalizationInfo: NormalizationInfo,
+    private val normalizationMode: NormalizationMode,
 ) {
 
     companion object {
@@ -37,8 +38,8 @@ class RumbleHandler(
                 val effect = alloc<ff_effect>().apply {
                     type = FF_RUMBLE.toUShort()
                     id = -1
-                    u.rumble.strong_magnitude = normalizationInfo.denormalize(state.strongRumble).toUShort()
-                    u.rumble.weak_magnitude = normalizationInfo.denormalize(state.weakRumble).toUShort()
+                    u.rumble.strong_magnitude = denormalize(state.strongRumble, normalizationMode).toUShort()
+                    u.rumble.weak_magnitude = denormalize(state.weakRumble, normalizationMode).toUShort()
                 }
 
                 rumbleEffectId.value = ioctl(fd, EVIOCSFF, effect)

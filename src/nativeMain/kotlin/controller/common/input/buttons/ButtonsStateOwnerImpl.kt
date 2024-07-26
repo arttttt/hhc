@@ -1,23 +1,24 @@
 package controller.common.input.buttons
 
+import controller.physical2.common.ButtonMapping
+
 class ButtonsStateOwnerImpl(
-    supportedButtons: Map<Int, ButtonCode>
+    buttonsMapping: List<ButtonMapping>,
 ) : ButtonsStateOwner {
 
     override val buttonsState: Map<ButtonCode, ButtonImpl>
     private val systemButtonsState: Map<Int, ButtonImpl>
 
     init {
-        val buttons = supportedButtons.map { (systemCode, code) ->
+        val buttons = buttonsMapping.map { mapping ->
             ButtonImpl(
-                code = code,
-                systemCode = systemCode,
+                mapping = mapping,
                 isPressed = false,
             )
         }
 
-        buttonsState = buttons.associateBy(Button::code)
-        systemButtonsState = buttons.associateBy(Button::systemCode)
+        buttonsState = buttons.associateBy { button -> button.mapping.code }
+        systemButtonsState = buttons.associateBy { button -> button.mapping.systemCode }
     }
 
     override fun setButtonState(code: ButtonCode, isPressed: Boolean): Boolean {
@@ -34,5 +35,29 @@ class ButtonsStateOwnerImpl(
         systemButtonsState[code]?.isPressed = isPressed
 
         return true
+    }
+
+    override fun setButtonsState(report: ByteArray): Boolean {
+        for ((_, button) in buttonsState) {
+            if (button.mapping.location == ButtonMapping.UNKNOWN_LOCATION) continue
+
+            button.isPressed = getButtonState(
+                report = report,
+                location = button.mapping.location
+            )
+        }
+
+        return true
+    }
+
+    private fun getButtonState(
+        report: ByteArray,
+        location: Int,
+    ): Boolean {
+        val byteIndex = location / 8
+        val bitIndex = 7 - (location % 8)
+        val value = (report[byteIndex].toInt() and (1 shl bitIndex)) != 0
+
+        return value
     }
 }

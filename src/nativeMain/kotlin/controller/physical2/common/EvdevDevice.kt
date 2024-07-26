@@ -73,13 +73,13 @@ class EvdevDevice(
         event: input_event,
         state: ButtonsStateOwner,
     ) {
-        if (!state.setButtonState(event.code.toInt(), event.value == 1)) return
+        state.setButtonState(event.code.toInt(), event.value == 1)
     }
 
     private fun handleAxis(
         event: input_event,
         state: AxisStateOwner,
     ) {
-        if (!state.setAxisState(event.code.toInt(), event.value)) return
+        state.setAxisState(event.code.toInt(), event.value)
     }
 }

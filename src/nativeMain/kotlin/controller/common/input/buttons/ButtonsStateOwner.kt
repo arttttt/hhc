@@ -19,4 +19,11 @@ interface ButtonsStateOwner {
      * @return true when state was updated successfully
      */
     fun setButtonState(code: Int, isPressed: Boolean): Boolean
+
+    /**
+     * @param [report] - raw report
+     *
+     * @return
+     */
+    fun setButtonsState(report: ByteArray): Boolean
 }

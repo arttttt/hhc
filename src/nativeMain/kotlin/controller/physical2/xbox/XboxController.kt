@@ -7,8 +7,9 @@ import controller.common.input.axis.AxisStateOwnerImpl
 import controller.common.input.buttons.ButtonCode
 import controller.common.input.buttons.ButtonsStateOwner
 import controller.common.input.buttons.ButtonsStateOwnerImpl
-import controller.common.normalization.NormalizationInfo
 import controller.physical2.common.AbstractPhysicalController
+import controller.physical2.common.AxisMapping
+import controller.physical2.common.ButtonMapping
 import controller.physical2.common.InputDevice
 import input.*
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -19,47 +20,146 @@ class XboxController(
 
     class InputState : ControllerState,
         ButtonsStateOwner by ButtonsStateOwnerImpl(
-            supportedButtons = mapOf(
-                BTN_X to ButtonCode.X,
-                BTN_Y to ButtonCode.Y,
-                BTN_B to ButtonCode.B,
-                BTN_A to ButtonCode.A,
-                BTN_SELECT to ButtonCode.SELECT,
-                BTN_START to ButtonCode.START,
-                BTN_TL to ButtonCode.LB,
-                BTN_TR to ButtonCode.RB,
-                BTN_THUMBL to ButtonCode.LS,
-                BTN_THUMBR to ButtonCode.RS,
-                BTN_MODE to ButtonCode.MODE,
+            buttonsMapping = listOf(
+                ButtonMapping(
+                    systemCode = BTN_X,
+                    code = ButtonCode.X,
+                    location = ButtonMapping.UNKNOWN_LOCATION,
+                ),
+                ButtonMapping(
+                    systemCode = BTN_Y,
+                    code = ButtonCode.Y,
+                    location = ButtonMapping.UNKNOWN_LOCATION,
+                ),
+                ButtonMapping(
+                    systemCode = BTN_B,
+                    code = ButtonCode.B,
+                    location = ButtonMapping.UNKNOWN_LOCATION,
+                ),
+                ButtonMapping(
+                    systemCode = BTN_A,
+                    code = ButtonCode.A,
+                    location = ButtonMapping.UNKNOWN_LOCATION,
+                ),
+                ButtonMapping(
+                    systemCode = BTN_SELECT,
+                    code = ButtonCode.SELECT,
+                    location = ButtonMapping.UNKNOWN_LOCATION,
+                ),
+                ButtonMapping(
+                    systemCode = BTN_START,
+                    code = ButtonCode.START,
+                    location = ButtonMapping.UNKNOWN_LOCATION,
+                ),
+                ButtonMapping(
+                    systemCode = BTN_TL,
+                    code = ButtonCode.LB,
+                    location = ButtonMapping.UNKNOWN_LOCATION,
+                ),
+                ButtonMapping(
+                    systemCode = BTN_TR,
+                    code = ButtonCode.RB,
+                    location = ButtonMapping.UNKNOWN_LOCATION,
+                ),
+                ButtonMapping(
+                    systemCode = BTN_THUMBL,
+                    code = ButtonCode.LS,
+                    location = ButtonMapping.UNKNOWN_LOCATION,
+                ),
+                ButtonMapping(
+                    systemCode = BTN_THUMBR,
+                    code = ButtonCode.RS,
+                    location = ButtonMapping.UNKNOWN_LOCATION,
+                ),
+                ButtonMapping(
+                    systemCode = BTN_MODE,
+                    code = ButtonCode.MODE,
+                    location = ButtonMapping.UNKNOWN_LOCATION,
+                ),
             ),
         ),
         AxisStateOwner by AxisStateOwnerImpl(
-            supportedAxis = buildSet {
-                val dpadNormalizationInfo = NormalizationInfo(
+            axisMapping = buildList {
+                /*val dpadNormalizationInfo = NormalizationInfo(
                     minimum = -1,
                     maximum = 1,
                 )
 
-                add(Triple(ABS_HAT0X, AxisCode.HAT0X, dpadNormalizationInfo))
-                add(Triple(ABS_HAT0Y, AxisCode.HAT0Y, dpadNormalizationInfo))
+                add(
+                    AxisMapping(
+                        systemCode = ABS_HAT0X,
+                        code = AxisCode.HAT0X,
+                        normalizationInfo = dpadNormalizationInfo,
+                        location = AxisMapping.UNKNOWN_LOCATION,
+                    )
+                )
+                add(
+                    AxisMapping(
+                        systemCode = ABS_HAT0Y,
+                        code = AxisCode.HAT0Y,
+                        normalizationInfo = dpadNormalizationInfo,
+                        location = AxisMapping.UNKNOWN_LOCATION,
+                    )
+                )
 
                 val triggersNormalizationInfo = NormalizationInfo(
                     minimum = 0,
                     maximum = 1023,
                 )
-
-                add(Triple(ABS_Z, AxisCode.LT, triggersNormalizationInfo))
-                add(Triple(ABS_RZ, AxisCode.RT, triggersNormalizationInfo))
+                add(
+                    AxisMapping(
+                        systemCode = ABS_Z,
+                        code = AxisCode.LT,
+                        normalizationInfo = triggersNormalizationInfo,
+                        location = AxisMapping.UNKNOWN_LOCATION,
+                    )
+                )
+                add(
+                    AxisMapping(
+                        systemCode = ABS_RZ,
+                        code = AxisCode.RT,
+                        normalizationInfo = triggersNormalizationInfo,
+                        location = AxisMapping.UNKNOWN_LOCATION,
+                    )
+                )
 
                 val joystickNormalizationInfo = NormalizationInfo(
                     minimum = -32768,
                     maximum = 32767,
                 )
 
-                add(Triple(ABS_X, AxisCode.LX, joystickNormalizationInfo))
-                add(Triple(ABS_Y, AxisCode.LY, joystickNormalizationInfo))
-                add(Triple(ABS_RX, AxisCode.RX, joystickNormalizationInfo))
-                add(Triple(ABS_RY, AxisCode.RY, joystickNormalizationInfo))
+                add(
+                    AxisMapping(
+                        systemCode = ABS_X,
+                        code = AxisCode.LX,
+                        normalizationInfo = joystickNormalizationInfo,
+                        location = AxisMapping.UNKNOWN_LOCATION,
+                    )
+                )
+                add(
+                    AxisMapping(
+                        systemCode = ABS_Y,
+                        code = AxisCode.LY,
+                        normalizationInfo = joystickNormalizationInfo,
+                        location = AxisMapping.UNKNOWN_LOCATION,
+                    )
+                )
+                add(
+                    AxisMapping(
+                        systemCode = ABS_RX,
+                        code = AxisCode.RX,
+                        normalizationInfo = joystickNormalizationInfo,
+                        location = AxisMapping.UNKNOWN_LOCATION,
+                    )
+                )
+                add(
+                    AxisMapping(
+                        systemCode = ABS_RY,
+                        code = AxisCode.RY,
+                        normalizationInfo = joystickNormalizationInfo,
+                        location = AxisMapping.UNKNOWN_LOCATION,
+                    )
+                )*/
             }
         )
 
