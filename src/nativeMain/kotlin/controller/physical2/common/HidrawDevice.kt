@@ -39,13 +39,19 @@ class HidrawDevice(
     }
 
     context(MemScope)
-    override fun processRawData(rawData: ByteArray, state: ControllerState) {
-        if (state is ButtonsStateOwner) {
+    override fun processRawData(rawData: ByteArray, state: ControllerState): Boolean {
+        val buttonsStateChanged = if (state is ButtonsStateOwner) {
             state.setButtonsState(rawData)
+        } else {
+            false
         }
 
-        if (state is AxisStateOwner) {
+        val axisStateChanged = if (state is AxisStateOwner) {
             state.setAxisState(rawData)
+        } else {
+            false
         }
+
+        return buttonsStateChanged || axisStateChanged
     }
 }

@@ -16,5 +16,5 @@ interface InputDevice {
     fun read(to: ByteArray): Int
 
     context(MemScope)
-    fun processRawData(rawData: ByteArray, state: ControllerState)
+    fun processRawData(rawData: ByteArray, state: ControllerState): Boolean
 }

@@ -38,16 +38,20 @@ class ButtonsStateOwnerImpl(
     }
 
     override fun setButtonsState(report: ByteArray): Boolean {
+        var stateChanged = false
         for ((_, button) in buttonsState) {
             if (button.mapping.location == ButtonMapping.UNKNOWN_LOCATION) continue
 
-            button.isPressed = getButtonState(
+            val newState = getButtonState(
                 report = report,
                 location = button.mapping.location
             )
+
+            stateChanged = stateChanged || button.isPressed != newState
+            button.isPressed = newState
         }
 
-        return true
+        return stateChanged
     }
 
     private fun getButtonState(

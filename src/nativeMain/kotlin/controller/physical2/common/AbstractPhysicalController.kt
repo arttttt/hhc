@@ -92,12 +92,10 @@ abstract class AbstractPhysicalController(
                         val bytesRead = device.read(rawData)
 
                         if (bytesRead > 0) {
-                            device.processRawData(
+                            stateChanged = stateChanged || device.processRawData(
                                 rawData = rawData,
                                 state = inputState,
                             )
-
-                            stateChanged = true
                         }
                     }
                 }

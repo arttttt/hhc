@@ -45,41 +45,42 @@ class EvdevDevice(
     override fun processRawData(
         rawData: ByteArray,
         state: ControllerState,
-    ) {
+    ): Boolean {
         val ev = alloc<input_event>()
         val bytesRead = read(fd, ev.ptr, sizeOf<input_event>().toULong())
         if (bytesRead < 0) {
             perror("Error reading from device")
 
-            return
+            return false
         }
 
-        if (ev.type.toInt() == EV_SYN) return
+        if (ev.type.toInt() == EV_SYN) return false
 
-        handleInputEvent(ev, state)
+        return handleInputEvent(ev, state)
     }
 
     private fun handleInputEvent(
         event: input_event,
         state: ControllerState,
-    ) {
-        when {
+    ): Boolean {
+        return when {
             event.type.toInt() == EV_KEY && state is ButtonsStateOwner -> handleKeys(event, state)
             event.type.toInt() == EV_ABS && state is AxisStateOwner -> handleAxis(event, state)
+            else -> false
         }
     }
 
     private fun handleKeys(
         event: input_event,
         state: ButtonsStateOwner,
-    ) {
-        state.setButtonState(event.code.toInt(), event.value == 1)
+    ): Boolean {
+        return state.setButtonState(event.code.toInt(), event.value == 1)
     }
 
     private fun handleAxis(
         event: input_event,
         state: AxisStateOwner,
-    ) {
-        state.setAxisState(event.code.toInt(), event.value)
+    ): Boolean {
+        return state.setAxisState(event.code.toInt(), event.value)
     }
 }

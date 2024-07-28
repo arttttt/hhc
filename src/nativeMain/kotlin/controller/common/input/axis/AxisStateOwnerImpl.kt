@@ -3,7 +3,6 @@ package controller.common.input.axis
 import controller.common.normalization.NormalizationMode
 import controller.physical2.common.AxisMapping
 import utils.convertNormalizedValue
-import utils.denormalize
 import utils.normalize
 
 @Suppress("NAME_SHADOWING")
@@ -49,21 +48,23 @@ class AxisStateOwnerImpl(
     }
 
     override fun setAxisState(report: ByteArray): Boolean {
+        var stateChanged = false
         for ((_, axis) in axisState) {
             if (axis.mapping.location == AxisMapping.UNKNOWN_LOCATION) continue
 
-            val value = getAxisState(
-                report = report,
-                location = axis.mapping.location,
-            )
-
-            axis.value = normalize(
-                value = value,
+            val newState = normalize(
+                value = getAxisState(
+                    report = report,
+                    location = axis.mapping.location,
+                ),
                 mode = axis.mapping.normalizationMode,
             )
+
+            stateChanged = stateChanged || axis.value != newState
+            axis.value = newState
         }
 
-        return true
+        return stateChanged
     }
 
     override fun setAxisState(code: AxisCode, value: Double, fromMode: NormalizationMode): Boolean {
@@ -85,12 +86,5 @@ class AxisStateOwnerImpl(
         val byteIndex = location / 8
 
         return report[byteIndex].toInt()
-    }
-
-    private fun decodeM8(value: Byte): Double {
-        val intValue = (value.toInt() and 0xFF) - (1 shl 7)
-        val s = (1 shl 7).toDouble()
-
-        return intValue / s
     }
 }
