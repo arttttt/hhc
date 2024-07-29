@@ -13,6 +13,8 @@ abstract class AbstractVirtualController(
     private val deviceInfo: VirtualControllerConfig,
 ) : VirtualController {
 
+    private var pollfd: pollfd? = null
+
     protected val uhidDevice = UHidDevice(
         name = deviceInfo.name,
         uniq = deviceInfo.uniq,
@@ -24,7 +26,7 @@ abstract class AbstractVirtualController(
         reportDescriptor = deviceInfo.reportDescriptor,
     )
 
-    private var pollfd: pollfd? = null
+    override var onControllerStateChanged: (() -> Unit)? = null
 
     protected abstract fun handleUhidEvent(event: UHidEvent)
 

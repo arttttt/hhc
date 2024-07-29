@@ -9,6 +9,8 @@ abstract class AbstractPhysicalController(
     protected val devices: List<InputDevice>
 ) : PhysicalController2 {
 
+    override var onControllerStateChanged: (() -> Unit)? = null
+
     private val pollFdsMap = mutableMapOf<Int, pollfd>()
     private val devicesMap = mutableMapOf<Int, InputDevice>()
 
@@ -43,6 +45,9 @@ abstract class AbstractPhysicalController(
 
     context(MemScope)
     override fun readEvents() {
+
+        var stateChanged = false
+
         pollFdsMap.entries.forEach { (_, pollfd) ->
             if (pollfd.revents.toInt() and POLLIN != 0) {
                 val device = devicesMap.getValue(pollfd.fd)
@@ -51,12 +56,16 @@ abstract class AbstractPhysicalController(
                 val bytesRead = device.read(rawData)
 
                 if (bytesRead > 0) {
-                    device.processRawData(
+                    stateChanged = stateChanged || device.processRawData(
                         rawData = rawData,
                         state = controllerState,
                     )
                 }
             }
+        }
+
+        if (stateChanged) {
+            onControllerStateChanged?.invoke()
         }
     }
 }

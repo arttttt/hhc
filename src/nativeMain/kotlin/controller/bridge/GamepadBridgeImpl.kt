@@ -103,11 +103,20 @@ class GamepadBridgeImpl(
                     virtualController!! to listOf(virtualControllerPollFd),
                 )
 
+                controller.onControllerStateChanged = {
+                    virtualController!!.consumeControllerState(controller.controllerState)
+                }
+
+                virtualController!!.onControllerStateChanged = {
+                    /**
+                     * todo: provide virtual controller state
+                     *
+                     * e.g LED, Rumble, etc
+                     */
+                }
+
                 startInputEventsLoop(
                     controllers = controllers,
-                    onStateChanged = {
-                        virtualController!!.consumeControllerState(controller.controllerState)
-                    }
                 )
             }
         }
@@ -134,7 +143,6 @@ class GamepadBridgeImpl(
     context(MemScope)
     private suspend fun startInputEventsLoop(
         controllers: Map<Controller, List<pollfd>>,
-        onStateChanged: () -> Unit,
     ) {
         val size = controllers.values.sumOf { pollFds -> pollFds.size }
         val pollFds = controllers.values.flatten()
@@ -161,8 +169,6 @@ class GamepadBridgeImpl(
             controllers.keys.forEach { controller ->
                 controller.readEvents()
             }
-
-            onStateChanged()
         }
     }
 }

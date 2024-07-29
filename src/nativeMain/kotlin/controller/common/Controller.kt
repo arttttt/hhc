@@ -6,6 +6,8 @@ interface Controller {
 
     val controllerState: ControllerState
 
+    var onControllerStateChanged: (() -> Unit)?
+
     context(MemScope)
     fun readEvents()
 }
