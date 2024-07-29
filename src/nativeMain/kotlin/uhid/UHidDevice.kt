@@ -28,7 +28,7 @@ class UHidDevice(
     fun open() {
         if (fd >= 0) throw IllegalStateException("UHID device already open")
 
-        fd = open(UHID_DEVICE, O_RDWR or O_NONBLOCK)
+        fd = open(UHID_DEVICE, O_RDWR)
         if (fd < 0) {
             perror("open")
 
@@ -62,7 +62,9 @@ class UHidDevice(
     fun write(event: UHidEvent) {
         memScoped {
             val platformEvent = event.toPlatformEvent(this)
-            if (write(fd, platformEvent.ptr, sizeOf<uhid_event>().toULong()) < 0) {
+            val ret = write(fd, platformEvent.ptr, sizeOf<uhid_event>().toULong())
+
+            if (ret < 0) {
                 perror("write")
                 throw RuntimeException("Failed to write to UHID device")
             }

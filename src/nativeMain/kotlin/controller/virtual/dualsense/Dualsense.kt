@@ -17,7 +17,6 @@ import controller.virtual.common.AbstractVirtualController
 import controller.virtual.common.MacAddressFormatter
 import controller.virtual.dualsense.constants.*
 import input.*
-import kotlinx.coroutines.flow.MutableSharedFlow
 import uhid.BUS_USB
 import uhid.UHidEvent
 import utils.denormalize
@@ -44,7 +43,7 @@ class Dualsense : AbstractVirtualController(
         private const val COUNTRY: UInt = 0u
     }
 
-    private class InputState : ControllerState,
+    class InputState : ControllerState,
         ButtonsStateOwner by ButtonsStateOwnerImpl(
             buttonsMapping = listOf(
                 ButtonMapping(
@@ -285,17 +284,13 @@ class Dualsense : AbstractVirtualController(
         }
     }
 
-    override val outputStates = MutableSharedFlow<CompactOutputDataReport>(
-        extraBufferCapacity = 1,
-    )
-
-    private val inputState = InputState()
+    override val controllerState = InputState()
 
     private val outputReport = CompactOutputDataReport(
         enableRumbleEmulation = false,
     )
 
-    override suspend fun handleInputState(state: ControllerState) {
+    override fun consumeControllerState(state: ControllerState) {
         if (state is ButtonsStateOwner) {
             handleButtonsState(state)
         }
@@ -304,11 +299,11 @@ class Dualsense : AbstractVirtualController(
             handleAxisState(state)
         }
 
-        val data = inputState.getRawData()
+        val data = this.controllerState.getRawData()
 
         uhidDevice.write(
             UHidEvent.Input(
-                data
+                data = data
             )
         )
     }
@@ -327,7 +322,7 @@ class Dualsense : AbstractVirtualController(
 
     private fun handleButtonsState(state: ButtonsStateOwner) {
         state.buttonsState.forEach { (code, button) ->
-            inputState.setButtonState(
+            controllerState.setButtonState(
                 code = code,
                 isPressed = button.isPressed,
             )
@@ -336,7 +331,7 @@ class Dualsense : AbstractVirtualController(
 
     private fun handleAxisState(state: AxisStateOwner) {
         state.axisState.forEach { (code, axis) ->
-            inputState.setAxisState(
+            controllerState.setAxisState(
                 code = code,
                 value = axis.value,
                 fromMode = axis.mapping.normalizationMode,
@@ -346,7 +341,6 @@ class Dualsense : AbstractVirtualController(
 
     private fun handleOutput(event: UHidEvent.Output) {
         outputReport.setRawData(event.data)
-        outputStates.tryEmit(outputReport)
     }
 
     private fun handleGetReport(event: UHidEvent.GetReport) {

@@ -13,7 +13,6 @@ import controller.physical2.common.AxisMapping
 import controller.physical2.common.ButtonMapping
 import controller.physical2.common.InputDevice
 import input.*
-import kotlinx.coroutines.flow.MutableSharedFlow
 
 class LenovoLegionGoController(
     devices: List<InputDevice>
@@ -178,15 +177,7 @@ class LenovoLegionGoController(
             }
         )
 
-    override val inputState = InputState()
-
-    override val states = MutableSharedFlow<InputState>(
-        extraBufferCapacity = 1,
-    )
-
-    override fun onStateUpdated() {
-        states.tryEmit(inputState)
-    }
+    override val controllerState = InputState()
 
     override fun consumeControllerState(state: ControllerState) {}
 }

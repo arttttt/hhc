@@ -1,14 +1,9 @@
 package controller.virtual.common
 
-import controller.common.ControllerState
 import controller.virtual.VirtualControllerConfig
+import kotlinx.cinterop.MemScope
 import kotlinx.cinterop.alloc
-import kotlinx.cinterop.memScoped
-import kotlinx.cinterop.ptr
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
 import platform.posix.POLLIN
-import platform.posix.poll
 import platform.posix.pollfd
 import uhid.BUS_USB
 import uhid.UHidDevice
@@ -29,62 +24,44 @@ abstract class AbstractVirtualController(
         reportDescriptor = deviceInfo.reportDescriptor,
     )
 
-    protected val uhidScope = CoroutineScope(newSingleThreadContext("UHIDDispatcher") + SupervisorJob())
-    protected val stateProcessingScope = CoroutineScope(newSingleThreadContext("StateProcessingDispatcher") + SupervisorJob())
-    private val stateChannel = Channel<ControllerState>(Channel.BUFFERED)
+    private var pollfd: pollfd? = null
 
     protected abstract fun handleUhidEvent(event: UHidEvent)
-    protected abstract suspend fun handleInputState(state: ControllerState)
 
-    override fun create() {
-        uhidScope.launch {
-            uhidDevice.open()
-            uhidDevice.create()
-            startControllerLoop()
-        }
-        stateProcessingScope.launch {
-            startStateProcessingLoop()
-        }
+    context(MemScope)
+    override fun create2(): pollfd {
         println("virtual controller ${deviceInfo.name} created")
+
+        uhidDevice.open()
+        uhidDevice.create()
+
+        val pollfd =  alloc<pollfd>().apply {
+            fd = uhidDevice.fd
+            events = POLLIN.toShort()
+        }
+
+        this.pollfd = pollfd
+
+        return pollfd
     }
 
     override fun destroy() {
-        uhidScope.cancel()
-        stateProcessingScope.cancel()
         uhidDevice.write(UHidEvent.Destroy)
         uhidDevice.close()
+        pollfd = null
         println("virtual controller ${deviceInfo.name} destroyed")
     }
 
-    override fun consumeControllerState(state: ControllerState) {
-        stateChannel.trySend(state)
-    }
+    context(MemScope)
+    override fun readEvents() {
+        /**
+         * todo: inform about issues
+         */
+        val pollfd = pollfd ?: return
 
-    private suspend fun startControllerLoop() {
-        memScoped {
-            val pollFd = alloc<pollfd>().apply {
-                fd = uhidDevice.fd
-                events = POLLIN.toShort()
-            }
-
-            while (true) {
-                currentCoroutineContext().ensureActive()
-
-                val ret = poll(pollFd.ptr, 1u, -1)
-
-                if (ret == -1) throw IllegalStateException("Can not start polling")
-
-                if (pollFd.revents.toInt() and POLLIN != 0) {
-                    val event = uhidDevice.read()
-                    handleUhidEvent(event)
-                }
-            }
-        }
-    }
-
-    private suspend fun startStateProcessingLoop() {
-        for (state in stateChannel) {
-            handleInputState(state)
+        if (pollfd.revents.toInt() and POLLIN != 0) {
+            val event = uhidDevice.read()
+            handleUhidEvent(event)
         }
     }
 }

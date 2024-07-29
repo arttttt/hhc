@@ -1,13 +1,16 @@
 package controller.virtual.common
 
+import controller.common.Controller
 import controller.common.ControllerState
+import kotlinx.cinterop.MemScope
 import kotlinx.coroutines.flow.Flow
+import platform.posix.pollfd
 
-interface VirtualController {
+interface VirtualController : Controller {
 
-    val outputStates: Flow<ControllerState>
+    context(MemScope)
+    fun create2(): pollfd
 
-    fun create()
     fun destroy()
 
     fun consumeControllerState(state: ControllerState)

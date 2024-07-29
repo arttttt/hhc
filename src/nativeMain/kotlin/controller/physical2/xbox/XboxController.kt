@@ -163,15 +163,7 @@ class XboxController(
             }
         )
 
-    override val inputState = InputState()
-
-    override val states = MutableSharedFlow<InputState>(
-        extraBufferCapacity = 1,
-    )
-
-    override fun onStateUpdated() {
-        states.tryEmit(inputState)
-    }
+    override val controllerState = InputState()
 
     override fun consumeControllerState(state: ControllerState) {}
 }

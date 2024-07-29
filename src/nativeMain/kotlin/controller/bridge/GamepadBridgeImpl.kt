@@ -1,14 +1,21 @@
 package controller.bridge
 
+import controller.common.Controller
 import controller.physical2.common.PhysicalController2
 import controller.physical2.detector.ControllerDetector2
 import controller.physical2.detector.DeviceDetector
 import controller.physical2.detector.DeviceDetectorImpl
 import controller.virtual.VirtualControllerFactory
 import controller.virtual.common.VirtualController
+import kotlinx.cinterop.MemScope
+import kotlinx.cinterop.allocArray
+import kotlinx.cinterop.get
+import kotlinx.cinterop.memScoped
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import platform.posix.poll
+import platform.posix.pollfd
 
 class GamepadBridgeImpl(
     private val controllerDetector: ControllerDetector2,
@@ -65,11 +72,11 @@ class GamepadBridgeImpl(
     }
 
     override fun shutdown() {
-        stop()
         detectionScope.cancel()
         bridgeScope.cancel()
         detectionContext.close()
         bridgeContext.close()
+        stop()
     }
 
     private suspend fun connectController(
@@ -79,18 +86,29 @@ class GamepadBridgeImpl(
             activeController = controller
         }
 
-        controller.start()
-        ensureVirtualControllerExists()
-
-        bridgeScope.launch {
-            controller.states.collect { state ->
-                virtualController!!.consumeControllerState(state)
-            }
+        if (virtualController != null) {
+            virtualController!!.destroy()
+            virtualController = null
         }
 
+        virtualController = virtualControllerFactory.create()
+
         bridgeScope.launch {
-            virtualController!!.outputStates.collect { outputState ->
-                controller.consumeControllerState(outputState)
+            memScoped {
+                val virtualControllerPollFd = virtualController!!.create2()
+                val physicalControllerPollFds = controller.start2()
+
+                val controllers = mapOf(
+                    controller to physicalControllerPollFds,
+                    virtualController!! to listOf(virtualControllerPollFd),
+                )
+
+                startInputEventsLoop(
+                    controllers = controllers,
+                    onStateChanged = {
+                        virtualController!!.consumeControllerState(controller.controllerState)
+                    }
+                )
             }
         }
     }
@@ -104,13 +122,6 @@ class GamepadBridgeImpl(
         }
     }
 
-    private fun ensureVirtualControllerExists() {
-        if (virtualController == null) {
-            virtualController = virtualControllerFactory.create()
-            virtualController?.create()
-        }
-    }
-
     private fun destroyVirtualController() {
         virtualController?.destroy()
         virtualController = null
@@ -118,5 +129,40 @@ class GamepadBridgeImpl(
 
     private suspend fun getActiveController(): PhysicalController2? {
         return mutex.withLock { activeController }
+    }
+
+    context(MemScope)
+    private suspend fun startInputEventsLoop(
+        controllers: Map<Controller, List<pollfd>>,
+        onStateChanged: () -> Unit,
+    ) {
+        val size = controllers.values.sumOf { pollFds -> pollFds.size }
+        val pollFds = controllers.values.flatten()
+        val nativeFds = allocArray<pollfd>(size)
+
+        pollFds.forEachIndexed { index, pollfd ->
+            nativeFds[index].fd = pollfd.fd
+            nativeFds[index].events = pollfd.events
+            nativeFds[index].revents = pollfd.revents
+        }
+
+        while (true) {
+            currentCoroutineContext().ensureActive()
+
+            val ret = poll(nativeFds, size.toULong(), 1000)
+
+            if (ret == -1) throw IllegalStateException("Can not start polling")
+
+            pollFds.forEachIndexed { index, pollfd ->
+                pollfd.revents = nativeFds[index].revents
+                pollfd.events = nativeFds[index].events
+            }
+
+            controllers.keys.forEach { controller ->
+                controller.readEvents()
+            }
+
+            onStateChanged()
+        }
     }
 }

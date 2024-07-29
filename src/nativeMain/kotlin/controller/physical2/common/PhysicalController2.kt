@@ -1,13 +1,14 @@
 package controller.physical2.common
 
+import controller.common.Controller
 import controller.common.ControllerState
-import kotlinx.coroutines.flow.Flow
+import kotlinx.cinterop.MemScope
+import platform.posix.pollfd
 
-interface PhysicalController2 {
+interface PhysicalController2 : Controller {
 
-    val states: Flow<ControllerState>
-
-    fun start()
+    context(MemScope)
+    fun start2(): List<pollfd>
     fun stop()
 
     fun consumeControllerState(state: ControllerState)
