@@ -1,8 +1,8 @@
 package controller.physical2.detector
 
-import controller.physical.DeviceType
-import controller.physical.InputDeviceHwInfo
-import controller.physical.InputDeviceIds
+import controller.physical2.common.DeviceType
+import controller.physical2.common.InputDeviceHwInfo
+import controller.physical2.common.InputDeviceIds
 import controller.physical2.common.EvdevDevice
 import controller.physical2.common.HidrawDevice
 import controller.physical2.common.PhysicalController2

@@ -1,7 +1,6 @@
 package controller.physical2.common
 
 import controller.common.ControllerState
-import controller.physical.InputDeviceHwInfo
 import kotlinx.cinterop.MemScope
 import platform.posix.pollfd
 

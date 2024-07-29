@@ -3,7 +3,6 @@ package controller.physical2.common
 import controller.common.ControllerState
 import controller.common.input.axis.AxisStateOwner
 import controller.common.input.buttons.ButtonsStateOwner
-import controller.physical.InputDeviceHwInfo
 import kotlinx.cinterop.MemScope
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.refTo

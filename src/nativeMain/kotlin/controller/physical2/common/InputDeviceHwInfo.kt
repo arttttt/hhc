@@ -1,4 +1,4 @@
-package controller.physical
+package controller.physical2.common
 
 data class InputDeviceHwInfo(
     val name: String,

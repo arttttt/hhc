@@ -78,6 +78,11 @@ class LenovoLegionGoController(
                 ),
                 ButtonMapping(
                     systemCode = ButtonMapping.UNKNOWN_SYSTEM_CODE,
+                    code = ButtonCode.SHARE,
+                    location = 18 * 8 + 1,
+                ),
+                ButtonMapping(
+                    systemCode = ButtonMapping.UNKNOWN_SYSTEM_CODE,
                     code = ButtonCode.EXTRA_L1,
                     location = 20 * 8,
                 ),

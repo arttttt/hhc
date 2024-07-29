@@ -11,6 +11,7 @@ enum class ButtonCode {
     RS,
     MODE,
     START,
+    SHARE,
     SELECT,
     EXTRA_L1,
     EXTRA_L2,

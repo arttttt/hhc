@@ -1,4 +1,4 @@
-package controller.physical.common
+package controller.physical2.common
 
 import kotlinx.cinterop.IntVar
 import kotlinx.cinterop.sizeOf
