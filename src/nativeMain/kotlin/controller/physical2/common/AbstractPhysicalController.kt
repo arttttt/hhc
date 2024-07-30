@@ -1,5 +1,6 @@
 package controller.physical2.common
 
+import controller.common.ControllerState
 import kotlinx.cinterop.MemScope
 import platform.posix.POLLIN
 import platform.posix.close
@@ -9,7 +10,7 @@ abstract class AbstractPhysicalController(
     protected val devices: List<InputDevice>
 ) : PhysicalController2 {
 
-    override var onControllerStateChanged: (() -> Unit)? = null
+    override var onControllerStateChanged: ((ControllerState) -> Unit)? = null
 
     private val pollFdsMap = mutableMapOf<Int, pollfd>()
     private val devicesMap = mutableMapOf<Int, InputDevice>()
@@ -65,7 +66,7 @@ abstract class AbstractPhysicalController(
         }
 
         if (stateChanged) {
-            onControllerStateChanged?.invoke()
+            onControllerStateChanged?.invoke(controllerState)
         }
     }
 }

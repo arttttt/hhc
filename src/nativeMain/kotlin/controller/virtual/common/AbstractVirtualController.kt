@@ -1,5 +1,6 @@
 package controller.virtual.common
 
+import controller.common.ControllerState
 import controller.virtual.VirtualControllerConfig
 import kotlinx.cinterop.MemScope
 import kotlinx.cinterop.alloc
@@ -26,7 +27,7 @@ abstract class AbstractVirtualController(
         reportDescriptor = deviceInfo.reportDescriptor,
     )
 
-    override var onControllerStateChanged: (() -> Unit)? = null
+    override var onControllerStateChanged: ((ControllerState) -> Unit)? = null
 
     protected abstract fun handleUhidEvent(event: UHidEvent)
 

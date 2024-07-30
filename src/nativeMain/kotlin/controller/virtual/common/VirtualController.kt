@@ -12,6 +12,4 @@ interface VirtualController : Controller {
     fun create2(): pollfd
 
     fun destroy()
-
-    fun consumeControllerState(state: ControllerState)
 }

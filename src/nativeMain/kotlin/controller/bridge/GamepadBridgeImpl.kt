@@ -1,5 +1,6 @@
 package controller.bridge
 
+import controller.InputMiddleware
 import controller.common.Controller
 import controller.physical2.common.PhysicalController2
 import controller.physical2.detector.ControllerDetector2
@@ -7,15 +8,11 @@ import controller.physical2.detector.DeviceDetector
 import controller.physical2.detector.DeviceDetectorImpl
 import controller.virtual.VirtualControllerFactory
 import controller.virtual.common.VirtualController
-import kotlinx.cinterop.MemScope
-import kotlinx.cinterop.allocArray
-import kotlinx.cinterop.get
-import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import platform.posix.poll
-import platform.posix.pollfd
+import platform.posix.*
 
 class GamepadBridgeImpl(
     private val controllerDetector: ControllerDetector2,
@@ -33,6 +30,7 @@ class GamepadBridgeImpl(
 
     private var activeController: PhysicalController2? = null
     private var virtualController: VirtualController? = null
+    private var inputMiddleware: InputMiddleware? = null
 
     private val mutex = Mutex()
 
@@ -77,6 +75,7 @@ class GamepadBridgeImpl(
         detectionContext.close()
         bridgeContext.close()
         stop()
+        inputMiddleware?.cleanup()
     }
 
     private suspend fun connectController(
@@ -92,19 +91,18 @@ class GamepadBridgeImpl(
         }
 
         virtualController = virtualControllerFactory.create()
+        inputMiddleware = InputMiddleware()
 
         bridgeScope.launch {
             memScoped {
                 val virtualControllerPollFd = virtualController!!.create2()
                 val physicalControllerPollFds = controller.start2()
+                val middlewarePollFd = inputMiddleware!!.start()
 
-                val controllers = mapOf(
-                    controller to physicalControllerPollFds,
-                    virtualController!! to listOf(virtualControllerPollFd),
-                )
+                val pollFds = physicalControllerPollFds + virtualControllerPollFd + middlewarePollFd
 
-                controller.onControllerStateChanged = {
-                    virtualController!!.consumeControllerState(controller.controllerState)
+                controller.onControllerStateChanged = { state ->
+                    inputMiddleware!!.consumeControllerState(state)
                 }
 
                 virtualController!!.onControllerStateChanged = {
@@ -115,8 +113,17 @@ class GamepadBridgeImpl(
                      */
                 }
 
+                inputMiddleware!!.onControllerStateChanged = { state ->
+                    virtualController!!.consumeControllerState(state)
+                }
+
                 startInputEventsLoop(
-                    controllers = controllers,
+                    controllers = listOf(
+                        controller,
+                        virtualController!!,
+                        inputMiddleware!!,
+                    ),
+                    pollFds = pollFds,
                 )
             }
         }
@@ -142,11 +149,10 @@ class GamepadBridgeImpl(
 
     context(MemScope)
     private suspend fun startInputEventsLoop(
-        controllers: Map<Controller, List<pollfd>>,
+        controllers: List<Controller>,
+        pollFds: List<pollfd>,
     ) {
-        val size = controllers.values.sumOf { pollFds -> pollFds.size }
-        val pollFds = controllers.values.flatten()
-        val nativeFds = allocArray<pollfd>(size)
+        val nativeFds = allocArray<pollfd>(pollFds.size)
 
         pollFds.forEachIndexed { index, pollfd ->
             nativeFds[index].fd = pollfd.fd
@@ -157,7 +163,7 @@ class GamepadBridgeImpl(
         while (true) {
             currentCoroutineContext().ensureActive()
 
-            val ret = poll(nativeFds, size.toULong(), 1000)
+            val ret = poll(nativeFds, pollFds.size.toULong(), 1000)
 
             if (ret == -1) throw IllegalStateException("Can not start polling")
 
@@ -166,7 +172,7 @@ class GamepadBridgeImpl(
                 pollfd.events = nativeFds[index].events
             }
 
-            controllers.keys.forEach { controller ->
+            controllers.forEach { controller ->
                 controller.readEvents()
             }
         }
