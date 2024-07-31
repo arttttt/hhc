@@ -12,6 +12,7 @@ import controller.physical2.common.AxisMapping
 import controller.physical2.common.ButtonMapping
 import controller.physical2.common.InputDevice
 import input.*
+import kotlinx.cinterop.MemScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 
 class XboxController(
@@ -166,4 +167,8 @@ class XboxController(
     override val controllerState = InputState()
 
     override fun consumeControllerState(state: ControllerState) {}
+
+    context(MemScope) override fun processInputData(device: InputDevice, rawData: ByteArray): Boolean {
+        return false
+    }
 }

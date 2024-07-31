@@ -1,8 +1,5 @@
 package controller.physical2.common
 
-import controller.common.ControllerState
-import controller.common.input.axis.AxisStateOwner
-import controller.common.input.buttons.ButtonsStateOwner
 import kotlinx.cinterop.MemScope
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.refTo
@@ -35,22 +32,5 @@ class HidrawDevice(
 
     override fun read(to: ByteArray): Int {
         return read(fd, to.refTo(0), to.size.toULong()).toInt()
-    }
-
-    context(MemScope)
-    override fun processRawData(rawData: ByteArray, state: ControllerState): Boolean {
-        val buttonsStateChanged = if (state is ButtonsStateOwner) {
-            state.setButtonsState(rawData)
-        } else {
-            false
-        }
-
-        val axisStateChanged = if (state is AxisStateOwner) {
-            state.setAxisState(rawData)
-        } else {
-            false
-        }
-
-        return buttonsStateChanged || axisStateChanged
     }
 }

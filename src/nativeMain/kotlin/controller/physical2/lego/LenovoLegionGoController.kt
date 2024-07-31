@@ -8,11 +8,11 @@ import controller.common.input.buttons.ButtonCode
 import controller.common.input.buttons.ButtonsStateOwner
 import controller.common.input.buttons.ButtonsStateOwnerImpl
 import controller.common.normalization.NormalizationMode
-import controller.physical2.common.AbstractPhysicalController
-import controller.physical2.common.AxisMapping
-import controller.physical2.common.ButtonMapping
-import controller.physical2.common.InputDevice
+import controller.physical2.common.*
 import input.*
+import kotlinx.cinterop.*
+import platform.posix.perror
+import platform.posix.read
 
 class LenovoLegionGoController(
     devices: List<InputDevice>
@@ -185,4 +185,40 @@ class LenovoLegionGoController(
     override val controllerState = InputState()
 
     override fun consumeControllerState(state: ControllerState) {}
+
+    context(MemScope)
+    override fun processInputData(device: InputDevice, rawData: ByteArray): Boolean {
+        return when (device) {
+            is EvdevDevice -> handleEvdevInput(rawData)
+            is HidrawDevice -> handleHidrawInput(rawData)
+            else -> false
+        }
+    }
+
+    context(MemScope)
+    private fun handleEvdevInput(
+        rawData: ByteArray,
+    ): Boolean {
+        val ev = rawData.usePinned { pinned ->
+            pinned
+                .addressOf(0)
+                .reinterpret<input_event>()
+                .pointed
+        }
+
+        if (ev.type.toInt() == EV_SYN) return false
+
+        return when {
+            ev.type.toInt() == EV_KEY -> controllerState.setButtonState(ev.code.toInt(), ev.value == 1)
+            ev.type.toInt() == EV_ABS -> controllerState.setAxisState(ev.code.toInt(), ev.value)
+            else -> false
+        }
+    }
+
+    context(MemScope)
+    private fun handleHidrawInput(
+        rawData: ByteArray,
+    ): Boolean {
+        return controllerState.setButtonsState(rawData) || controllerState.setAxisState(rawData)
+    }
 }

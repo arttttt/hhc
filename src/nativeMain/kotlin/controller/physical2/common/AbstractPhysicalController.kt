@@ -16,6 +16,9 @@ abstract class AbstractPhysicalController(
     private val devicesMap = mutableMapOf<Int, InputDevice>()
 
     context(MemScope)
+    protected abstract fun processInputData(device: InputDevice, rawData: ByteArray): Boolean
+
+    context(MemScope)
     override fun start2(): List<pollfd> {
         val pollFds = devices.associateBy { device -> device.open() }
 
@@ -57,9 +60,9 @@ abstract class AbstractPhysicalController(
                 val bytesRead = device.read(rawData)
 
                 if (bytesRead > 0) {
-                    stateChanged = stateChanged || device.processRawData(
+                    stateChanged = stateChanged || processInputData(
+                        device = device,
                         rawData = rawData,
-                        state = controllerState,
                     )
                 }
             }
