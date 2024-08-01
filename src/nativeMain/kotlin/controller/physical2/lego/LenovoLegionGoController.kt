@@ -11,8 +11,6 @@ import controller.common.normalization.NormalizationMode
 import controller.physical2.common.*
 import input.*
 import kotlinx.cinterop.*
-import platform.posix.perror
-import platform.posix.read
 
 class LenovoLegionGoController(
     devices: List<InputDevice>
@@ -182,6 +180,11 @@ class LenovoLegionGoController(
             }
         )
 
+    companion object {
+
+        private const val INPUT_REPORT_ID: Byte = 4
+    }
+
     override val controllerState = InputState()
 
     override fun consumeControllerState(state: ControllerState) {}
@@ -219,6 +222,11 @@ class LenovoLegionGoController(
     private fun handleHidrawInput(
         rawData: ByteArray,
     ): Boolean {
-        return controllerState.setButtonsState(rawData) || controllerState.setAxisState(rawData)
+        val reportId = rawData[0]
+        
+        return when {
+            reportId == INPUT_REPORT_ID -> controllerState.setButtonsState(rawData) || controllerState.setAxisState(rawData)
+            else -> false
+        }
     }
 }
