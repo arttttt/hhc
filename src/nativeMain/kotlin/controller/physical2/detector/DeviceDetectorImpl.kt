@@ -9,8 +9,11 @@ import controller.physical2.common.InputDevice
 import controller.physical2.common.PhysicalController2
 import controller.physical2.lego.LenovoLegionGoController
 import hidraw.hidraw_devinfo
+import input.EVIOCGID
+import input.input_id
 import kotlinx.cinterop.*
 import platform.posix.*
+import utils.EVIOCGNAME
 import utils.HIDIOCGRAWINFO
 import utils.HIDIOCGRAWNAME
 
@@ -23,7 +26,10 @@ class DeviceDetectorImpl : DeviceDetector {
         private const val LENOVO_LEGION_GO_PRODUCT_NAME = "83E1"
 
         private const val HIDRAW_DIR_PATH = "/dev"
-        private const val DEVICE_PREFIX = "hidraw"
+        private const val HIDRAW_DEVICE_PREFIX = "hidraw"
+
+        private const val INPUT_DIR_PATH = "/dev/input"
+        private const val EVDEV_DEVICE_PREFIX = "event"
     }
 
     override fun detect(): PhysicalController2? {
@@ -31,16 +37,23 @@ class DeviceDetectorImpl : DeviceDetector {
 
         return when (productName) {
             LENOVO_LEGION_GO_PRODUCT_NAME -> LenovoLegionGoController(
-                devices = findInputDevices(
-                    vid = 0x17ef,
-                    pid = 0x6182,
-                ),
+                devices = buildList {
+                    this += findHidrawInputDevices(
+                        vid = 0x17ef,
+                        pid = 0x6182,
+                    )
+
+                    this += findEvdevInputDevices(
+                        vid = 0x17ef,
+                        pid = 0x6182,
+                    )
+                },
             )
             else -> null
         }
     }
 
-    private fun findInputDevices(
+    private fun findHidrawInputDevices(
         vid: Int,
         pid: Int,
     ): List<InputDevice> {
@@ -55,10 +68,10 @@ class DeviceDetectorImpl : DeviceDetector {
 
                 val name = entry.d_name.toKString()
 
-                if (name.startsWith(DEVICE_PREFIX)) {
+                if (name.startsWith(HIDRAW_DEVICE_PREFIX)) {
                     val hidrawDevicePath = "$HIDRAW_DIR_PATH/$name"
 
-                    val info = getControllerInfo(hidrawDevicePath) ?: continue
+                    val info = getHidrawControllerInfo(hidrawDevicePath) ?: continue
                     if (info.ids.vendorId != vid || info.ids.productId != pid) continue
 
                     inputDevices += createInputDevice(info)
@@ -66,6 +79,41 @@ class DeviceDetectorImpl : DeviceDetector {
             }
 
             closedir(hidrawDir)
+        }
+
+        return inputDevices
+    }
+
+    private fun findEvdevInputDevices(
+        vid: Int,
+        pid: Int,
+    ): List<InputDevice> {
+        val inputDevices = mutableListOf<InputDevice>()
+
+        val inputDir = opendir(INPUT_DIR_PATH)
+        if (inputDir != null) {
+            var entry: dirent?
+
+            while (true) {
+                entry = readdir(inputDir)?.pointed ?: break
+
+                val name = entry.d_name.toKString()
+
+                if (name.startsWith(EVDEV_DEVICE_PREFIX)) {
+                    val eventDevicePath = "$INPUT_DIR_PATH/$name"
+
+                    val info = getEvdevControllerInfo(eventDevicePath) ?: continue
+                    if (info.ids.vendorId != vid || info.ids.productId != pid) continue
+
+                    /**
+                     * todo: remove later
+                     */
+                    if (info.name != "Lenovo Legion Controller for Windows") continue
+
+                    inputDevices += createInputDevice(info)
+                }
+            }
+            closedir(inputDir)
         }
 
         return inputDevices
@@ -83,7 +131,7 @@ class DeviceDetectorImpl : DeviceDetector {
         }
     }
 
-    private fun getControllerInfo(
+    private fun getHidrawControllerInfo(
         hidrawDevicePath: String
     ): InputDeviceHwInfo? {
         val fd = open(hidrawDevicePath, O_RDONLY)
@@ -122,6 +170,62 @@ class DeviceDetectorImpl : DeviceDetector {
             }
         } finally {
             close(fd)
+        }
+    }
+
+    private fun getEvdevControllerInfo(
+        eventDevicePath: String
+    ): InputDeviceHwInfo? {
+        val fd = open(eventDevicePath, O_RDONLY)
+        if (fd < 0) {
+            perror("Error opening device: $eventDevicePath")
+            return null
+        }
+
+        return try {
+            val name = readName(fd)
+            val (vendor, product) = readVendorAndProduct(fd)
+
+            when {
+                name != null && vendor != null && product != null -> {
+                    InputDeviceHwInfo(
+                        name = name,
+                        ids = InputDeviceIds(
+                            vendorId = vendor,
+                            productId = product,
+                        ),
+                        path = eventDevicePath,
+                        type = DeviceType.STANDARD,
+                    )
+                }
+                else -> null
+            }
+        } finally {
+            close(fd)
+        }
+    }
+
+    private fun readVendorAndProduct(fd: Int): Pair<Int?, Int?> {
+        return memScoped {
+            val id = alloc<input_id>()
+            val ret = ioctl(fd, EVIOCGID, id.ptr)
+
+            when {
+                ret < 0 -> null to null
+                id.vendor.toInt() == 0 || id.product.toInt() == 0 -> null to null
+                else -> id.vendor.toInt() to id.product.toInt()
+            }
+        }
+    }
+
+    private fun readName(fd: Int): String? {
+        val buffer = ByteArray(4096)
+
+        val ret = ioctl(fd, EVIOCGNAME(buffer.size.toULong()), buffer.refTo(0))
+
+        return when {
+            ret < 0 -> null
+            else -> buffer.toKString().trim()
         }
     }
 

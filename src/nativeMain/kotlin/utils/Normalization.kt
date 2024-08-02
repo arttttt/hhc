@@ -37,13 +37,19 @@ fun denormalize(
 }
 
 fun convertNormalizedValue(value: Double, fromMode: NormalizationMode, toMode: NormalizationMode): Double {
-    return normalize(
-        value = denormalize(
-            value = value,
-            mode = fromMode,
-        ),
-        mode = toMode,
-    )
+    val isFromSigned = isSignedMode(fromMode)
+    val isToSigned = isSignedMode(toMode)
+
+    val convertedValue = when {
+        isFromSigned && !isToSigned -> transformMinusOneToOneToZeroToOne(value)
+        !isFromSigned && isToSigned -> transformZeroToOneToMinusOneToOne(value)
+        else -> value
+    }
+
+    return when (isToSigned) {
+        true -> convertedValue.coerceIn(-1.0, 1.0)
+        false -> convertedValue.coerceIn(0.0, 1.0)
+    }
 }
 
 private fun normalizeM8(value: Int): Double {
@@ -68,7 +74,7 @@ private fun normalizeU8(value: Int): Double {
 }
 
 private fun normalizeI16(value: Int): Double {
-    val intValue = (value and 0xFFFF).toShort().toInt() // Преобразуем к short и обратно к int для знакового значения
+    val intValue = (value and 0xFFFF)
     val s = (1 shl 15).toDouble() - 1
 
     return intValue / s
@@ -113,7 +119,7 @@ private fun denormalizeM8(value: Double): Int {
     val s = (1 shl 7).toDouble()
     val intValue = (value * s).toInt() + (1 shl 7)
 
-    return intValue and 0xFF
+    return intValue
 }
 
 private fun denormalizeI8(value: Double): Int {
@@ -134,7 +140,7 @@ private fun denormalizeI16(value: Double): Int {
     val s = (1 shl 15).toDouble() - 1
     val intValue = (value * s).toInt()
 
-    return intValue.toShort().toInt() and 0xFFFF
+    return intValue
 }
 
 private fun denormalizeU16(value: Double): Int {
@@ -184,4 +190,20 @@ private fun getNormalizationRange(mode: NormalizationMode): Pair<Double, Double>
         NormalizationMode.I32 -> -2147483647.0 to 2147483647.0
         NormalizationMode.M32 -> -2147483648.0 to 2147483647.0
     }
+}
+
+private fun isSignedMode(mode: NormalizationMode): Boolean {
+    return when (mode) {
+        NormalizationMode.I8, NormalizationMode.I16, NormalizationMode.I32 -> true
+        NormalizationMode.M8, NormalizationMode.M16, NormalizationMode.M32 -> true
+        NormalizationMode.U8, NormalizationMode.U16, NormalizationMode.U32 -> false
+    }
+}
+
+private fun transformMinusOneToOneToZeroToOne(value: Double): Double {
+    return (value + 1) / 2
+}
+
+private fun transformZeroToOneToMinusOneToOne(value: Double): Double {
+    return 2 * value - 1
 }

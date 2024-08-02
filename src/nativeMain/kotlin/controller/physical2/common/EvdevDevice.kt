@@ -9,6 +9,8 @@ class EvdevDevice(
     override val hwInfo: InputDeviceHwInfo
 ) : InputDevice {
 
+    private val grabber = GamepadGrabber()
+
     private var fd: Int = -1
 
     context(MemScope)
@@ -18,6 +20,8 @@ class EvdevDevice(
             throw IllegalStateException("Не удалось открыть устройство: ${hwInfo.path}")
         }
 
+        grabber.grab(fd)
+
         return alloc<pollfd>().apply {
             this.fd = this@EvdevDevice.fd
             events = POLLIN.toShort()
@@ -26,6 +30,8 @@ class EvdevDevice(
 
     override fun close() {
         if (fd < 0) return
+
+        grabber.release(fd)
 
         close(fd)
         fd = -1

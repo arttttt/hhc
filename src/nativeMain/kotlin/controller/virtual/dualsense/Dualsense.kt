@@ -252,6 +252,16 @@ class Dualsense : AbstractVirtualController(
             axisState.forEach { (_, axis) ->
                 val byteIndex = axis.mapping.location / 8
 
+                if (axis.mapping.code == AxisCode.LY) {
+                    println(
+                        """
+                            norm: ${axis.value}
+                            denorm: ${denormalize(axis.value,axis.mapping.normalizationMode).toUByte()}
+                            mode: ${axis.mapping.normalizationMode}
+                        """.trimIndent()
+                    )
+                }
+
                 rawData[byteIndex] = denormalize(
                     value = axis.value,
                     mode = axis.mapping.normalizationMode,

@@ -133,7 +133,8 @@ class LenovoLegionGoController(
                         systemCode = ABS_Z,
                         code = AxisCode.LT,
                         normalizationMode = NormalizationMode.U8,
-                        location = 22 * 8,
+                        location = AxisMapping.UNKNOWN_LOCATION,
+                        //location = 22 * 8,
                     )
                 )
                 add(
@@ -141,7 +142,8 @@ class LenovoLegionGoController(
                         systemCode = ABS_RZ,
                         code = AxisCode.RT,
                         normalizationMode = NormalizationMode.U8,
-                        location = 23 * 8,
+                        location = AxisMapping.UNKNOWN_LOCATION,
+                        //location = 23 * 8,
                     )
                 )
 
@@ -149,32 +151,40 @@ class LenovoLegionGoController(
                     AxisMapping(
                         systemCode = ABS_X,
                         code = AxisCode.LX,
-                        normalizationMode = NormalizationMode.M8,
-                        location = 14 * 8,
+                        //normalizationMode = NormalizationMode.M8,
+                        normalizationMode = NormalizationMode.I16,
+                        location = AxisMapping.UNKNOWN_LOCATION,
+                        //location = 14 * 8,
                     )
                 )
                 add(
                     AxisMapping(
                         systemCode = ABS_Y,
                         code = AxisCode.LY,
-                        normalizationMode = NormalizationMode.M8,
-                        location = 15 * 8,
+                        //normalizationMode = NormalizationMode.M8,
+                        normalizationMode = NormalizationMode.I16,
+                        location = AxisMapping.UNKNOWN_LOCATION,
+                        //location = 15 * 8,
                     )
                 )
                 add(
                     AxisMapping(
                         systemCode = ABS_RX,
                         code = AxisCode.RX,
-                        normalizationMode = NormalizationMode.M8,
-                        location = 16 * 8,
+                        //normalizationMode = NormalizationMode.M8,
+                        normalizationMode = NormalizationMode.I16,
+                        location = AxisMapping.UNKNOWN_LOCATION,
+                        //location = 16 * 8,
                     )
                 )
                 add(
                     AxisMapping(
                         systemCode = ABS_RY,
                         code = AxisCode.RY,
-                        normalizationMode = NormalizationMode.M8,
-                        location = 17 * 8,
+                        //normalizationMode = NormalizationMode.M8,
+                        normalizationMode = NormalizationMode.I16,
+                        location = AxisMapping.UNKNOWN_LOCATION,
+                        //location = 17 * 8,
                     )
                 )
             }
@@ -183,6 +193,10 @@ class LenovoLegionGoController(
     companion object {
 
         private const val INPUT_REPORT_ID: Byte = 4
+    }
+
+    init {
+        println(devices.joinToString("\n") { it.hwInfo.toString() })
     }
 
     override val controllerState = InputState()
@@ -223,9 +237,9 @@ class LenovoLegionGoController(
         rawData: ByteArray,
     ): Boolean {
         val reportId = rawData[0]
-        
+
         return when {
-            reportId == INPUT_REPORT_ID -> controllerState.setButtonsState(rawData) || controllerState.setAxisState(rawData)
+            //reportId == INPUT_REPORT_ID -> controllerState.setButtonsState(rawData) || controllerState.setAxisState(rawData)
             else -> false
         }
     }

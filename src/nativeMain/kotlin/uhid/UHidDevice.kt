@@ -23,7 +23,9 @@ class UHidDevice(
     }
 
     var fd: Int = -1
-        private set
+        private set(value) {
+            field = value
+        }
 
     fun open() {
         if (fd >= 0) throw IllegalStateException("UHID device already open")
