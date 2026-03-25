@@ -137,9 +137,111 @@ Report ID `0x01`, 20 bytes. Supports 3 simultaneous touch contacts.
 
 No explicit release event — release detected by ~4ms timeout with no report.
 
-## Configuration Commands
+## Configuration Protocol (Output Report ID 0x05)
 
-Sent via HID feature reports. Examples:
+Configuration commands are sent via HID output reports on the vendor-specific interface.
+Format: `05 <len> <cmd> <param> ... 01`
+
+The command byte is structured as two nibbles: `<mode><command>`, where mode `6` = XInput, `7` = FPS.
+
+Source: [hhd-dev/hwinfo](https://github.com/hhd-dev/hwinfo/blob/master/devices/legion_go/peripherals/readme.md)
+
+### Gyroscope
+
+Enable/disable per controller:
+```
+0508 6a 02 <controller> <enable> 01
+```
+- Controller: `03` = left, `04` = right
+- Enable: `00` = off, `01` = on
+
+Remap gyro to joystick:
+```
+0508 6a 06 01 01 <gyro> <joystick> 01
+```
+- Gyro: `01` = left, `02` = right
+- Joystick: `00` = disabled, `01` = left stick, `02` = right stick
+
+### Touchpad
+
+Enable/disable:
+```
+0506 6b 02 04 <enable> 01
+```
+
+Vibration on touch:
+```
+0506 6b 04 04 <enable> 01
+```
+- `01` = off, `02` = on
+
+### Vibration Intensity
+
+```
+0506 67 02 <controller> <level> 01
+```
+- Level: `00` = off, `01` = weak, `02` = medium, `03` = strong
+
+### RGB LED
+
+Each controller has an RGB LED below the joystick. 3 profiles supported.
+
+Toggle on/off:
+```
+0506 70 02 <controller> <on/off> 01
+```
+
+Select profile (1-3):
+```
+0506 73 02 <controller> <profile> 01
+```
+
+Set profile settings:
+```
+050c 72 01 <controller> <mode> <R> <G> <B> <brightness> <speed> <profile> 01
+```
+- Mode: `01` = solid, `02` = blinking, `03` = dynamic color
+- Brightness/speed: `00`-`64` (0-100%)
+
+### Stick Deadzones
+
+```
+0506 3f 06 <controller> <level> 01
+```
+- Controller: `03` = left, `04` = right
+- Level: `00`-`63` (default `04` = 5%)
+
+### Stick Sensitivity
+
+```
+0509 3f 02 <controller> <tx> <ty> <bx> <by> 01
+```
+Two-point curve: top point (tx, ty), bottom point (bx, by).
+
+### Button Remapping (Back Buttons)
+
+```
+0507 6c 02 <controller> <button> <action> 01
+```
+- Buttons: `03 1c` = Y1, `03 1d` = Y2, `04 1e` = Y3, `04 21` = M2, `04 22` = M3
+- Actions: `00` = disabled, `03` = LS click, `04`-`07` = LS directions, `08`-`0c` = RS, `0d`-`10` = D-pad, `12`-`15` = A/B/X/Y, `16`-`19` = bumpers/triggers, `23` = View, `24` = Menu
+
+### Controller Sleep Timeout
+
+```
+0506 33 01 <controller> <minutes> 01
+```
+
+### Swap Legion Buttons with Start/Select
+
+```
+0506 69 04 01 <enable> 01
+```
+- `01` = normal, `02` = swapped
+
+## Simple Configuration Commands
+
+Sent as short HID commands (not Output Report 0x05):
 
 | Command | Bytes | Description |
 |---------|-------|-------------|
@@ -164,4 +266,5 @@ The kernel does not handle advanced controller synthesis — userspace daemons r
 | hhd (Handheld Daemon) | Python | https://github.com/hhd-dev/hhd |
 | InputPlumber | Rust | https://github.com/ShadowBlip/InputPlumber |
 | ROGueENEMY | C | https://github.com/NeroReflex/ROGueENEMY |
+| hhd-dev/hwinfo | Docs | https://github.com/hhd-dev/hwinfo |
 | legion-go-tricks | Misc | https://github.com/aarron-lee/legion-go-tricks |
