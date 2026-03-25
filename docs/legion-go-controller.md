@@ -6,16 +6,57 @@
 - **PID**: `0x6182` (XInput mode)
 - **Hardware model**: 83E1
 
-## HID Interfaces
+## USB Device Topology
 
-The controller presents as a USB composite device with multiple HID interfaces:
+A single USB composite device (`17EF:6182`) exposes 4 input interfaces through a USB hub:
+
+```
+USB Hub (usb-0000:c2:00.3-3)
+└── 17EF:6182 "Legion Controller for Windows"
+    ├── Interface 0 (1-3:1.0) ── xpad driver ──→ "Generic X-Box pad" (evdev + js)
+    ├── Interface 1 (1-3:1.1) ── usbhid ──→ Touchpad (evdev + mouse)
+    ├── Interface 2 (1-3:1.2) ── usbhid ──→ hidraw (vendor-specific XInput report)
+    └── Interface 3 (1-3:1.3) ── usbhid ──→ Keyboard (evdev) + Mouse (evdev)
+```
+
+### What each interface provides
+
+| Interface | Driver | Linux devices | Data |
+|-----------|--------|---------------|------|
+| 0 | xpad | evdev (gamepad), js | Standard Xbox360 buttons/axes, rumble (FF) |
+| 1 | usbhid | evdev (touchpad), hidraw | Touchpad multi-touch (Report ID 0x01, 20 bytes) |
+| 2 | usbhid | hidraw | **XInput report (Report ID 0x04, 64 bytes)** — ALL data in one packet |
+| 3 | usbhid | evdev (keyboard + mouse) | Macro keys, mouse wheel, scroll |
+
+### Which interface to use
+
+**Interface 2 hidraw is the only one needed.** Its 64-byte XInput report contains everything:
+- All standard buttons (A/B/X/Y, bumpers, triggers, sticks, D-pad)
+- All extra buttons (Y1/Y2/Y3, M2/M3, Legion, QuickAccess, ShowDesktop, AltTab)
+- Analog sticks and triggers
+- Touchpad coordinates
+- Dual IMU (accelerometer + gyroscope per controller)
+- Battery status
+- Controller dock/wireless state
+
+Other interfaces are for the OS (cursor, keyboard shortcuts) and xpad (basic gamepad fallback). Projects like hhd and InputPlumber read exclusively from interface 2 hidraw.
+
+### Identifying the correct hidraw device
+
+Multiple hidraw devices are created (one per HID interface). To find the right one:
+- Check that the first report has Report ID `0x04`
+- Or filter by HID report descriptor size (interface 2 has rdesc_size=44)
+
+## HID Interfaces (Report Formats)
+
+The two relevant HID interfaces:
 
 | Interface | Report ID | Size | Function |
 |-----------|-----------|------|----------|
-| 0x01 | `0x01` | 20 bytes | Touchpad (multi-touch, 3 contacts) |
-| 0x02 | `0x04` | 64 bytes | XInput gamepad (all buttons, axes, IMU) |
+| 0x01 | `0x01` | 20 bytes | Touchpad (multi-touch, 3 contacts) — interface 1 |
+| 0x02 | `0x04` | 64 bytes | XInput gamepad (all buttons, axes, IMU) — interface 2 |
 
-Additional evdev devices: Touchpad, Keyboard (macro keys), Mouse.
+The XInput report on interface 2 is the primary and only required data source.
 
 ## XInput Report Format
 
