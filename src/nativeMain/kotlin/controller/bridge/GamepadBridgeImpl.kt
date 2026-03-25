@@ -22,9 +22,7 @@ class GamepadBridgeImpl(
     private val bridgeContext = newSingleThreadContext("ControllerBridgeContext")
 
     private val detectionScope = CoroutineScope(SupervisorJob() + detectionContext + CoroutineExceptionHandler { _, throwable ->
-        /**
-         * do nothing
-         */
+        println("Detection error: ${throwable.message}")
     })
     private val bridgeScope = CoroutineScope(SupervisorJob() + bridgeContext)
 
@@ -45,21 +43,6 @@ class GamepadBridgeImpl(
             if (controller != null) {
                 connectController(controller)
             }
-
-/*            controllerDetector
-                .controllerEventsFlow()
-                .filter { event ->
-                    when (event) {
-                        is ControllerDetector.ControllerEvent.Attached -> getActiveController() == null
-                        is ControllerDetector.ControllerEvent.Detached -> getActiveController()?.hwInfo?.path == event.path
-                    }
-                }
-                .collect { event ->
-                    when (event) {
-                        is ControllerDetector.ControllerEvent.Attached -> connectController(event.controller)
-                        is ControllerDetector.ControllerEvent.Detached -> disconnectController()
-                    }
-                }*/
         }
     }
 
@@ -70,12 +53,12 @@ class GamepadBridgeImpl(
     }
 
     override fun shutdown() {
+        stop()
+        inputMiddleware?.cleanup()
         detectionScope.cancel()
         bridgeScope.cancel()
         detectionContext.close()
         bridgeContext.close()
-        stop()
-        inputMiddleware?.cleanup()
     }
 
     private suspend fun connectController(
@@ -143,10 +126,6 @@ class GamepadBridgeImpl(
         virtualController = null
     }
 
-    private suspend fun getActiveController(): PhysicalController2? {
-        return mutex.withLock { activeController }
-    }
-
     context(MemScope)
     private suspend fun startInputEventsLoop(
         controllers: List<Controller>,
@@ -165,7 +144,10 @@ class GamepadBridgeImpl(
 
             val ret = poll(nativeFds, pollFds.size.toULong(), 1000)
 
-            if (ret == -1) throw IllegalStateException("Can not start polling")
+            when {
+                ret == -1 && errno == EINTR -> continue
+                ret == -1 -> throw IllegalStateException("Can not start polling")
+            }
 
             pollFds.forEachIndexed { index, pollfd ->
                 pollfd.revents = nativeFds[index].revents
