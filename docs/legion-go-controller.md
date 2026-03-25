@@ -309,3 +309,35 @@ The kernel does not handle advanced controller synthesis — userspace daemons r
 | ROGueENEMY | C | https://github.com/NeroReflex/ROGueENEMY |
 | hhd-dev/hwinfo | Docs | https://github.com/hhd-dev/hwinfo |
 | legion-go-tricks | Misc | https://github.com/aarron-lee/legion-go-tricks |
+
+## HHC Support Status
+
+### Supported
+
+| Feature | Details |
+|---------|---------|
+| Sticks | LX, LY, RX, RY (M8 normalization) |
+| Triggers | LT, RT analog (U8) |
+| Face buttons | A, B, X, Y |
+| Bumpers | LB, RB |
+| Stick clicks | LS, RS |
+| D-pad | Up, Down, Left, Right |
+| Menu buttons | Start (Menu), Select (View) |
+| System buttons | Legion (MODE), QuickAccess (SHARE) |
+| Back paddles | Y1 (EXTRA_L1), Y2 (EXTRA_L2), Y3 (EXTRA_R1) |
+| Side/back buttons | M2 (EXTRA_R3), M3 (EXTRA_R2) |
+
+### Not supported
+
+| Feature | Byte/Bit | Reason |
+|---------|----------|--------|
+| DTriggerL (digital trigger click) | 19 bit 2 | Redundant — analog triggers already provide full range |
+| DTriggerR (digital trigger click) | 19 bit 0 | Same as above |
+| ShowDesktop | 21 bit 6 | System button, no DualSense analog. hhd ignores, InputPlumber maps to generic Keyboard |
+| AltTab | 21 bit 5 | System button, no DualSense analog. hhd ignores, InputPlumber maps to QuickAccess2 |
+| MouseClick (scroll wheel click) | 21 bit 7 | Desktop function, not gamepad |
+| Mouse Wheel (scroll axis) | byte 25, I8 | Desktop function, not gamepad |
+| Touchpad | bytes 26-29 (XInput) / interface 1 | Not implemented |
+| Gyroscope / IMU | bytes 30-59 | Not implemented |
+| Battery | bytes 5, 7 | Not implemented |
+| Controller dock state | bytes 6, 8, 12, 13 | Not implemented |
