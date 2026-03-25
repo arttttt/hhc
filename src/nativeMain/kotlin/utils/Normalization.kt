@@ -37,13 +37,19 @@ fun denormalize(
 }
 
 fun convertNormalizedValue(value: Double, fromMode: NormalizationMode, toMode: NormalizationMode): Double {
-    return normalize(
-        value = denormalize(
-            value = value,
-            mode = fromMode,
-        ),
-        mode = toMode,
-    )
+    val isFromSigned = isSignedMode(fromMode)
+    val isToSigned = isSignedMode(toMode)
+
+    val convertedValue = when {
+        isFromSigned && !isToSigned -> transformMinusOneToOneToZeroToOne(value)
+        !isFromSigned && isToSigned -> transformZeroToOneToMinusOneToOne(value)
+        else -> value
+    }
+
+    return when (isToSigned) {
+        true -> convertedValue.coerceIn(-1.0, 1.0)
+        false -> convertedValue.coerceIn(0.0, 1.0)
+    }
 }
 
 private fun normalizeM8(value: Int): Double {
@@ -170,6 +176,22 @@ private fun denormalizeM32(value: Double): Int {
     val intValue = (value * s).toInt() + (1 shl 31)
 
     return intValue
+}
+
+private fun isSignedMode(mode: NormalizationMode): Boolean {
+    return when (mode) {
+        NormalizationMode.I8, NormalizationMode.I16, NormalizationMode.I32 -> true
+        NormalizationMode.M8, NormalizationMode.M16, NormalizationMode.M32 -> true
+        NormalizationMode.U8, NormalizationMode.U16, NormalizationMode.U32 -> false
+    }
+}
+
+private fun transformMinusOneToOneToZeroToOne(value: Double): Double {
+    return (value + 1) / 2
+}
+
+private fun transformZeroToOneToMinusOneToOne(value: Double): Double {
+    return 2 * value - 1
 }
 
 private fun getNormalizationRange(mode: NormalizationMode): Pair<Double, Double> {
