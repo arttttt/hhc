@@ -31,14 +31,14 @@ abstract class AbstractVirtualController(
 
     protected abstract fun handleUhidEvent(event: UHidEvent)
 
-    context(MemScope)
+    context(scope: MemScope)
     override fun create2(): pollfd {
         println("virtual controller ${deviceInfo.name} created")
 
         uhidDevice.open()
         uhidDevice.create()
 
-        val pollfd =  alloc<pollfd>().apply {
+        val pollfd =  scope.alloc<pollfd>().apply {
             fd = uhidDevice.fd
             events = POLLIN.toShort()
         }
@@ -55,7 +55,7 @@ abstract class AbstractVirtualController(
         println("virtual controller ${deviceInfo.name} destroyed")
     }
 
-    context(MemScope)
+    context(scope: MemScope)
     override fun readEvents() {
         /**
          * todo: inform about issues

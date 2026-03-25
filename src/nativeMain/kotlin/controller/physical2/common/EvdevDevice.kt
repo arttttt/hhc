@@ -11,14 +11,14 @@ class EvdevDevice(
 
     private var fd: Int = -1
 
-    context(MemScope)
+    context(scope: MemScope)
     override fun open(): pollfd {
         fd = open(hwInfo.path, O_RDWR)
         if (fd < 0) {
             throw IllegalStateException("Не удалось открыть устройство: ${hwInfo.path}")
         }
 
-        return alloc<pollfd>().apply {
+        return scope.alloc<pollfd>().apply {
             this.fd = this@EvdevDevice.fd
             events = POLLIN.toShort()
         }

@@ -7,7 +7,7 @@ import platform.posix.pollfd
 
 interface PhysicalController2 : Controller {
 
-    context(MemScope)
+    context(scope: MemScope)
     fun start2(): List<pollfd>
     fun stop()
 }

@@ -168,7 +168,7 @@ class XboxController(
 
     override fun consumeControllerState(state: ControllerState) {}
 
-    context(MemScope) override fun processInputData(device: InputDevice, rawData: ByteArray): Boolean {
+    context(scope: MemScope) override fun processInputData(device: InputDevice, rawData: ByteArray): Boolean {
         return false
     }
 }

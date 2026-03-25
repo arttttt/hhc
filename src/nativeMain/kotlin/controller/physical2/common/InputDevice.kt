@@ -6,7 +6,7 @@ import platform.posix.pollfd
 interface InputDevice {
     val hwInfo: InputDeviceHwInfo
 
-    context(MemScope)
+    context(scope: MemScope)
     fun open(): pollfd
 
     fun close()

@@ -126,12 +126,12 @@ class GamepadBridgeImpl(
         virtualController = null
     }
 
-    context(MemScope)
+    context(scope: MemScope)
     private suspend fun startInputEventsLoop(
         controllers: List<Controller>,
         pollFds: List<pollfd>,
     ) {
-        val nativeFds = allocArray<pollfd>(pollFds.size)
+        val nativeFds = scope.allocArray<pollfd>(pollFds.size)
 
         pollFds.forEachIndexed { index, pollfd ->
             nativeFds[index].fd = pollfd.fd

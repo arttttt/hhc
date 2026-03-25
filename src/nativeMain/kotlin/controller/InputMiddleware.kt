@@ -76,9 +76,9 @@ class InputMiddleware : Controller {
 
     override var onControllerStateChanged: ((ControllerState) -> Unit)? = null
 
-    context(MemScope)
+    context(scope: MemScope)
     fun start(): pollfd {
-        val pollfd =  alloc<pollfd>().apply {
+        val pollfd =  scope.alloc<pollfd>().apply {
             fd = timerFd
             events = POLLIN.toShort()
         }
@@ -95,7 +95,7 @@ class InputMiddleware : Controller {
         }
     }
 
-    context(MemScope)
+    context(scope: MemScope)
     override fun readEvents() {
         val pollfd = pollfd ?: return
 

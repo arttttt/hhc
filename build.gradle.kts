@@ -56,7 +56,7 @@ kotlin {
         optIn.add("kotlinx.coroutines.ExperimentalCoroutinesApi")
         optIn.add("kotlinx.coroutines.DelicateCoroutinesApi")
 
-        freeCompilerArgs.add("-Xcontext-receivers")
+        freeCompilerArgs.add("-Xcontext-parameters")
     }
 }
 

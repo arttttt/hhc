@@ -8,7 +8,7 @@ import platform.posix.pollfd
 
 interface VirtualController : Controller {
 
-    context(MemScope)
+    context(scope: MemScope)
     fun create2(): pollfd
 
     fun destroy()

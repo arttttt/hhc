@@ -8,7 +8,7 @@ interface Controller {
 
     var onControllerStateChanged: ((ControllerState) -> Unit)?
 
-    context(MemScope)
+    context(scope: MemScope)
     fun readEvents()
 
     fun consumeControllerState(state: ControllerState)

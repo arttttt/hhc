@@ -189,7 +189,7 @@ class LenovoLegionGoController(
 
     override fun consumeControllerState(state: ControllerState) {}
 
-    context(MemScope)
+    context(scope: MemScope)
     override fun processInputData(device: InputDevice, rawData: ByteArray): Boolean {
         return when (device) {
             is EvdevDevice -> handleEvdevInput(rawData)
@@ -198,7 +198,7 @@ class LenovoLegionGoController(
         }
     }
 
-    context(MemScope)
+    context(scope: MemScope)
     private fun handleEvdevInput(
         rawData: ByteArray,
     ): Boolean {
@@ -218,7 +218,7 @@ class LenovoLegionGoController(
         }
     }
 
-    context(MemScope)
+    context(scope: MemScope)
     private fun handleHidrawInput(
         rawData: ByteArray,
     ): Boolean {
