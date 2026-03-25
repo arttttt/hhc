@@ -1,5 +1,7 @@
 @file:Suppress("ArrayInDataClass")
 
+package controller.virtual.dualsense
+
 @ExperimentalUnsignedTypes
 enum class PowerState(val value: UByte) {
     Discharging(0x00u),

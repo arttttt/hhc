@@ -4,6 +4,8 @@ import controller.common.ControllerState
 import controller.common.input.axis.AxisCode
 import controller.common.input.axis.AxisStateOwner
 import controller.common.input.axis.AxisStateOwnerImpl
+import controller.common.input.battery.BatteryStateOwner
+import controller.common.input.battery.BatteryStateOwnerImpl
 import controller.common.input.buttons.ButtonCode
 import controller.common.input.buttons.ButtonsStateOwner
 import controller.common.input.buttons.ButtonsStateOwnerImpl
@@ -178,11 +180,14 @@ class LenovoLegionGoController(
                     )
                 )
             }
-        )
+        ),
+        BatteryStateOwner by BatteryStateOwnerImpl()
 
     companion object {
 
         private const val INPUT_REPORT_ID: Byte = 4
+        private const val LEFT_BATTERY_BYTE = 5
+        private const val RIGHT_BATTERY_BYTE = 7
     }
 
     override val controllerState = InputState()
@@ -225,7 +230,10 @@ class LenovoLegionGoController(
         val reportId = rawData[0]
         
         return when {
-            reportId == INPUT_REPORT_ID -> controllerState.setButtonsState(rawData) || controllerState.setAxisState(rawData)
+            reportId == INPUT_REPORT_ID -> {
+                    controllerState.setBatteryState(rawData, LEFT_BATTERY_BYTE, RIGHT_BATTERY_BYTE)
+                    controllerState.setButtonsState(rawData) || controllerState.setAxisState(rawData)
+                }
             else -> false
         }
     }

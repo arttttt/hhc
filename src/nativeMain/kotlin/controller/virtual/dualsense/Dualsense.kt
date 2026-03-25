@@ -1,10 +1,12 @@
 package controller.virtual.dualsense
 
 import Direction
+import PowerState
 import controller.common.ControllerState
 import controller.common.input.axis.AxisCode
 import controller.common.input.axis.AxisStateOwner
 import controller.common.input.axis.AxisStateOwnerImpl
+import controller.common.input.battery.BatteryStateOwner
 import controller.common.input.buttons.Button
 import controller.common.input.buttons.ButtonCode
 import controller.common.input.buttons.ButtonsStateOwner
@@ -208,6 +210,8 @@ class Dualsense : AbstractVirtualController(
             const val REPORT_ID: UByte = 0x01u
         }
 
+        var batteryLevel: Int = 0
+
         private val rawData: UByteArray = UByteArray(64).apply {
             this[0] = REPORT_ID
         }
@@ -261,6 +265,10 @@ class Dualsense : AbstractVirtualController(
             rawData[33] = 0x80u
             rawData[37] = 0x80u
 
+            val powerState = PowerState.Complete
+            val powerPercent = (batteryLevel / 10).coerceIn(0, 10)
+            rawData[DS_BATTERY_BYTE] = ((powerState.value.toInt() shl 4) or powerPercent).toUByte()
+
             return rawData
         }
 
@@ -297,6 +305,10 @@ class Dualsense : AbstractVirtualController(
 
         if (state is AxisStateOwner) {
             handleAxisState(state)
+        }
+
+        if (state is BatteryStateOwner) {
+            handleBatteryState(state)
         }
 
         val data = this.controllerState.getRawData()
@@ -337,6 +349,10 @@ class Dualsense : AbstractVirtualController(
                 fromMode = axis.mapping.normalizationMode,
             )
         }
+    }
+
+    private fun handleBatteryState(state: BatteryStateOwner) {
+        controllerState.batteryLevel = state.batteryState.combinedLevel
     }
 
     private fun handleOutput(event: UHidEvent.Output) {

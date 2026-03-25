@@ -18,3 +18,5 @@ val STICK_X_MAX = UByte.MAX_VALUE.toDouble()
 val STICK_Y_MIN = UByte.MIN_VALUE.toDouble()
 val STICK_Y_MAX = UByte.MAX_VALUE.toDouble()
 val TRIGGER_MAX = UByte.MAX_VALUE.toDouble()
+
+const val DS_BATTERY_BYTE = 56
