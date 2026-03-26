@@ -12,4 +12,6 @@ interface InputDevice {
     fun close()
 
     fun read(to: ByteArray): Int
+
+    fun write(data: ByteArray): Int
 }

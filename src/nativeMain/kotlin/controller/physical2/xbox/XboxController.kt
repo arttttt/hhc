@@ -7,6 +7,7 @@ import controller.common.input.axis.AxisStateOwnerImpl
 import controller.common.input.buttons.ButtonCode
 import controller.common.input.buttons.ButtonsStateOwner
 import controller.common.input.buttons.ButtonsStateOwnerImpl
+import controller.common.output.OutputStateWriter
 import controller.physical2.common.AbstractPhysicalController
 import controller.physical2.common.AxisMapping
 import controller.physical2.common.ButtonMapping
@@ -16,8 +17,8 @@ import kotlinx.cinterop.MemScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 
 class XboxController(
-    devices: List<InputDevice>,
-) : AbstractPhysicalController(devices) {
+    deviceOutputStates: Map<InputDevice, OutputStateWriter?>,
+) : AbstractPhysicalController(deviceOutputStates) {
 
     class InputState : ControllerState,
         ButtonsStateOwner by ButtonsStateOwnerImpl(

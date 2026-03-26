@@ -7,7 +7,7 @@ import controller.physical2.common.EvdevDevice
 import controller.physical2.common.HidrawDevice
 import controller.physical2.common.InputDevice
 import controller.physical2.common.PhysicalController2
-import controller.physical2.lego.LenovoLegionGoController
+import controller.physical2.lego.LegionGoControllerFactory
 import hidraw.hidraw_devinfo
 import kotlinx.cinterop.*
 import platform.posix.*
@@ -30,12 +30,13 @@ class DeviceDetectorImpl : DeviceDetector {
         val productName = readProductName()
 
         return when (productName) {
-            LENOVO_LEGION_GO_PRODUCT_NAME -> LenovoLegionGoController(
-                devices = findInputDevices(
+            LENOVO_LEGION_GO_PRODUCT_NAME -> {
+                val devices = findInputDevices(
                     vid = 0x17ef,
                     pid = 0x6182,
-                ),
-            )
+                )
+                LegionGoControllerFactory().create(devices)
+            }
             else -> null
         }
     }

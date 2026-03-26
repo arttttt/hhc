@@ -88,12 +88,8 @@ class GamepadBridgeImpl(
                     inputMiddleware!!.consumeControllerState(state)
                 }
 
-                virtualController!!.onControllerStateChanged = {
-                    /**
-                     * todo: provide virtual controller state
-                     *
-                     * e.g LED, Rumble, etc
-                     */
+                virtualController!!.onControllerStateChanged = { state ->
+                    controller.consumeControllerState(state)
                 }
 
                 inputMiddleware!!.onControllerStateChanged = { state ->

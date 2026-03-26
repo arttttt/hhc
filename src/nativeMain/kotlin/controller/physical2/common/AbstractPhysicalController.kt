@@ -1,14 +1,17 @@
 package controller.physical2.common
 
 import controller.common.ControllerState
+import controller.common.output.OutputStateWriter
 import kotlinx.cinterop.MemScope
 import platform.posix.POLLIN
 import platform.posix.close
 import platform.posix.pollfd
 
 abstract class AbstractPhysicalController(
-    protected val devices: List<InputDevice>
+    private val deviceOutputStates: Map<InputDevice, OutputStateWriter?>,
 ) : PhysicalController2 {
+
+    protected val devices: List<InputDevice> = deviceOutputStates.keys.toList()
 
     override var onControllerStateChanged: ((ControllerState) -> Unit)? = null
 
@@ -44,6 +47,13 @@ abstract class AbstractPhysicalController(
 
         devicesMap.forEach { (_, device) ->
             device.close()
+        }
+    }
+
+    override fun consumeControllerState(state: ControllerState) {
+        for ((device, outputState) in deviceOutputStates) {
+            val output = outputState ?: continue
+            output.flush(device, state)
         }
     }
 

@@ -10,13 +10,14 @@ import controller.common.input.buttons.ButtonCode
 import controller.common.input.buttons.ButtonsStateOwner
 import controller.common.input.buttons.ButtonsStateOwnerImpl
 import controller.common.normalization.NormalizationMode
+import controller.common.output.OutputStateWriter
 import controller.physical2.common.*
 import input.*
 import kotlinx.cinterop.*
 
 class LenovoLegionGoController(
-    devices: List<InputDevice>
-) : AbstractPhysicalController(devices) {
+    deviceOutputStates: Map<InputDevice, OutputStateWriter?>,
+) : AbstractPhysicalController(deviceOutputStates) {
 
     class InputState : ControllerState,
         ButtonsStateOwner by ButtonsStateOwnerImpl(
@@ -191,8 +192,6 @@ class LenovoLegionGoController(
     }
 
     override val controllerState = InputState()
-
-    override fun consumeControllerState(state: ControllerState) {}
 
     context(scope: MemScope)
     override fun processInputData(device: InputDevice, rawData: ByteArray): Boolean {

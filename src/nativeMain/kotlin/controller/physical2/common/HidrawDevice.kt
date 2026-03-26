@@ -33,4 +33,8 @@ class HidrawDevice(
     override fun read(to: ByteArray): Int {
         return read(fd, to.refTo(0), to.size.toULong()).toInt()
     }
+
+    override fun write(data: ByteArray): Int {
+        return write(fd, data.refTo(0), data.size.toULong()).toInt()
+    }
 }

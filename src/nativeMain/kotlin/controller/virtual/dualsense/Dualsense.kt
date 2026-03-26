@@ -357,6 +357,7 @@ class Dualsense : AbstractVirtualController(
 
     private fun handleOutput(event: UHidEvent.Output) {
         outputReport.setRawData(event.data)
+        onControllerStateChanged?.invoke(outputReport)
     }
 
     private fun handleGetReport(event: UHidEvent.GetReport) {

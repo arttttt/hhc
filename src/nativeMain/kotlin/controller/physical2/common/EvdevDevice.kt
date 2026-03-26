@@ -34,4 +34,6 @@ class EvdevDevice(
     override fun read(to: ByteArray): Int {
         return read(fd, to.refTo(0), to.size.toULong()).toInt()
     }
+
+    override fun write(data: ByteArray): Int = -1
 }
